@@ -65,6 +65,15 @@ git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git device/xiaomi/na
 git clone https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git kernel/xiaomi/nabu
 ```
 
+#### 🚀 **Start Building**
+
+```bash
+source build/envsetup.sh
+lunch twrp_nabu-eng
+mka clean
+mka bootimage
+```
+
 #### 📂 **Output**
 
 ##### When done, you’ll get your recovery image here:
