@@ -1,0 +1,25 @@
+#!/sbin/bash
+. common
+if [[ -n $1 ]]; then
+winmax=$(echo "($max - 11222 - 8000)/1000" | bc)
+echo "min size is 30, max size is less then $winmax"
+! [[ -z $2 && $1 =~ ^[0-9]{1,3}(\.[0-9])?$ && $(echo "30 < $1 && $1 < $winmax" | bc) == 1 ]] && echo "invalid argument!" && exit 1
+echo ""$(echo "scale=2; $1*1000/1024" | bc)"GiB of space will be given to the main windows parition"
+winend=$(echo "$1*1000 + 11222" | bc)
+echo "userdata will get "$(echo "scale=2;($max-$winend)/1024" | bc)"GiB of space"
+echo -n "does that sound good (y/n)? "
+read yn
+[[ $yn =~ ^[Yy].*$ ]] || { echo "rethink things carefully and, eventually, you'll come to a conclusion.";exit 1; }
+fi
+removeparts
+sgdisk --resize-table 64 /dev/block/sda
+parted -s /dev/block/sda \
+  mkpart esp fat32 10872MB 11222MB \
+  mkpart win ntfs 11222MB $winend \
+  mkpart userdata ext4 $winend 100% \
+  set 31 esp on
+sync
+formatwindata
+formatwinesp
+fixgpt
+echo "done!"

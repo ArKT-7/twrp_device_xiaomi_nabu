@@ -1,0 +1,5 @@
+#!/sbin/bash
+ignoreweirdness=true
+. common
+fixgpt
+echo "done!"

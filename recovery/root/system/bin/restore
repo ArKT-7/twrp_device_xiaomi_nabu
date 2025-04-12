@@ -1,0 +1,4 @@
+#!/sbin/bash
+. common
+restore
+echo "done!"

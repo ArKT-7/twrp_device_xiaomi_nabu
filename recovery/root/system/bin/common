@@ -1,0 +1,96 @@
+#!/sbin/bash
+win=/dev/block/sda32
+esp=/dev/block/sda31
+removeparts(){
+    for i in $(seq 31 40); do
+        parted -s /dev/block/sda rm $i 2>/dev/null
+    done
+}
+formatwinesp(){
+mkfs.fat -F32 -s1 $esp -n ESPNABU
+mkfs.ntfs -f $win -L WINNABU
+}
+
+formatdata(){
+make_f2fs -f -g android /dev/block/sda31
+mke2fs -t ext4 -F /dev/block/sda19
+}
+
+formatwindata(){
+make_f2fs -f -g android /dev/block/sda33
+mke2fs -t ext4 -F /dev/block/sda19
+}
+
+restore(){
+removeparts
+parted -s /dev/block/sda mkpart userdata ext4 10872MB  100%
+sgdisk --resize-table 32 /dev/block/sda
+sync
+fixgpt
+formatdata
+}
+
+fixgpt() {
+    run_gdisk() {
+        local DEVICE=$1
+        gdisk "$DEVICE" <<EOF
+x
+j
+
+k
+
+w
+Y
+EOF
+    }
+
+    for i in a b c d e f; do
+        DEVICE="/dev/block/sd$i"
+        run_gdisk "$DEVICE"
+    done
+}
+
+[ "$ignoreweirdness" != true ] && for i in 1 2 3 4; do test -e /dev/block/platform/soc/1d84000.ufshc/by-name/bk0$i || {
+    echo "this script will NOT work with weird partition layouts! please restore the partition table by flashing gpt_both0 in fastboot!"
+    exit 1
+}; done
+[ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ] && echo "msc is enabled! aborting..." && echo "reboot and run the script again." && exit 1
+
+if getprop sys.usb.config | grep -q "mtp"; then
+    echo "run the script again!"
+    sleep 1
+    setprop sys.usb.config adb
+    rm /config/usb_gadget/g1/configs/b.1/f*
+    exit
+fi
+
+blocksize=$(blockdev --getsize64 /dev/block/sda)
+if [[ $blocksize =~ ^125[0-9]{9}$ ]]; then max=125586
+elif [[ $blocksize =~ ^253[0-9]{9}$ ]]; then max=253546
+elif [[ $blocksize =~ ^509[0-9]{9}$ ]]; then max=509465
+elif [[ $blocksize =~ ^1021[0-9]{9}$ ]]; then max=1021329
+else echo "is this nabu?"; exit 1
+fi
+
+for i in sdcard data; do umount -lf /$i 2>/dev/null; done
+dmsetup remove -f userdata 2>/dev/null
+for i in esp win firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done
+
+if [ "$ignoreweirdness" != true ]; then
+    weirdparts=$(find /dev/block -type b | grep -E '/sda(3[4-9]|[4-9][0-9])$')
+    if [ -n "$weirdparts" ]; then
+        echo -n "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST. Continue (y/n)? "
+        read yn
+        [[ $yn =~ ^[Yy].*$ ]] || {
+            echo "Can't proceed without restoring the table."
+            exit 1
+        }
+        echo "Restoring the stock partition layout now..."
+        for i in $weirdparts; do
+            f="${i:14}"
+            parted -s /dev/block/sda rm $f 2>/dev/null
+        done
+        restore
+        exit 0
+    fi
+fi

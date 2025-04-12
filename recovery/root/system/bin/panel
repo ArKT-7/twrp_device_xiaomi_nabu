@@ -1,0 +1,7 @@
+#!/sbin/bash
+if cat /proc/cmdline|grep -q "dsi_k82_36_02_0b_dual_cphy_vid_display"
+then echo Tianma
+elif cat /proc/cmdline|grep -q "dsi_k82_42_02_0a_dual_cphy_vid_display"
+then echo Huaxing
+else echo unknown
+fi
