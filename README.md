@@ -1,5 +1,7 @@
 # TWRP/ Modded TWRP for WOA Build Guide for Xiaomi Pad 5 (Nabu)
 
+## 😏 BTW, this is all happening on Arch...
+
 ### 🔧 **Prerequisites**
 
 #### Make sure you’ve got the build environment set up:
