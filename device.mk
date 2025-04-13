@@ -98,7 +98,12 @@ PRODUCT_SOONG_NAMESPACES += \
 # ==================================================
 # == TWRP UI Configuration ==
 # ==================================================
-TW_THEME := portrait_hdpi
+TW_THEME := landscape_hdpi
+TW_ROTATION := 90
+RECOVERY_TOUCHSCREEN_SWAP_XY := true
+RECOVERY_TOUCHSCREEN_FLIP_Y := true
+# ==================================================
+#TW_THEME := portrait_hdpi
 TW_DEVICE_VERSION := 4 Modded Recovery For Windows by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
@@ -124,6 +129,8 @@ TARGET_USES_MKE2FS := true
 TW_NO_HAPTICS := true
 TW_VERBOSE_MOUNT_LOGGING := true
 TW_USE_USB_STORAGE := true
+TW_INCLUDE_TWRP_CMD := true
+TW_INCLUDE_TWRP_CLI := true
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
