@@ -99,7 +99,7 @@ PRODUCT_SOONG_NAMESPACES += \
 # == TWRP UI Configuration ==
 # ==================================================
 TW_THEME := portrait_hdpi
-TW_DEVICE_VERSION := by ArKT
+TW_DEVICE_VERSION := 4 Modded Recovery For Windows by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true
