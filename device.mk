@@ -132,7 +132,6 @@ TW_USE_USB_STORAGE := true
 TW_INCLUDE_TWRP_CMD := true
 TW_INCLUDE_TWRP_CLI := true
 # Keep screen always on (no timeout)
-TW_NO_SCREEN_TIMEOUT := true
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
