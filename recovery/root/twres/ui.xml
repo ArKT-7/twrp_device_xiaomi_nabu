@@ -172,7 +172,7 @@
 		<variable name="navbar_y" value="1104"/>
 		<variable name="navbar_btn_y" value="1152"/>
 		<variable name="keyboard_y" value="592"/>
-		<variable name="background_color" value="#1A1A1A"/>
+		<variable name="background_color" value="#000000"/>
 		<variable name="accent_color" value="#0090CA"/>
 		<variable name="text_color" value="#EEEEEE"/>
 		<variable name="text_button_color" value="#EEEEEE"/>
@@ -673,8 +673,8 @@
 				<condition var1="tw_hide_kb" op="=" var2="0"/>
 				<placement x="0" y="%keyboard_y%" w="1920" h="512"/>
 				<keymargin x="6" y="6"/>
-				<background color="#111111"/>
-				<key-alphanumeric color="#111111" font="keylabel" textcolor="#EEEEEE"/>
+				<background color="#090909"/>
+				<key-alphanumeric color="#090909" font="keylabel" textcolor="#EEEEEE"/>
 				<key-other color="#111111" font="keylabel-small" textcolor="#5b5b5bff"/>
 				<longpress font="keylabel-longpress" textcolor="#5b5b5bff" x="40" y="4"/>
 				<keylabel key="0:c:8" text="Bksp" resource="backspace_terminal"/>
@@ -733,9 +733,9 @@
 			<keyboard>
 				<placement x="0" y="%keyboard_y%" w="1920" h="512"/>
 				<keymargin x="6" y="6"/>
-				<background color="#111111"/>
-				<key-alphanumeric color="#111111" font="keylabel" textcolor="#EEEEEE"/>
-				<key-other color="#111111" font="keylabel-small" textcolor="#5b5b5bff"/>
+				<background color="#090909"/>
+				<key-alphanumeric color="#090909" font="keylabel" textcolor="#EEEEEE"/>
+				<key-other color="#090909" font="keylabel-small" textcolor="#5b5b5bff"/>
 				<longpress font="keylabel-longpress" textcolor="#5b5b5bff" x="40" y="4"/>
 				<keylabel key="0:c:8" text="Bksp" resource="backspace"/>
 				<keylabel key="0:action" text="Enter" resource="enter"/>
@@ -785,9 +785,9 @@
 			<keyboard>
 				<placement x="0" y="%keyboard_y%" w="1920" h="512"/>
 				<keymargin x="6" y="6"/>
-				<background color="#111111"/>
-				<key-alphanumeric color="#111111" font="keylabel" textcolor="#EEEEEE"/>
-				<key-other color="#111111" font="keylabel-small" textcolor="#5b5b5bff"/>
+				<background color="#090909"/>
+				<key-alphanumeric color="#090909" font="keylabel" textcolor="#EEEEEE"/>
+				<key-other color="#090909" font="keylabel-small" textcolor="#5b5b5bff"/>
 				<longpress font="keylabel-longpress" textcolor="#5b5b5bff" x="40" y="4"/>
 				<keylabel key="0:c:8" text="Bksp" resource="backspace"/>
 				<keylabel key="0:action" text="Enter" resource="enter"/>
