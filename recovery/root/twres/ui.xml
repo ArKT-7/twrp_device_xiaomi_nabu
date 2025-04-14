@@ -675,7 +675,7 @@
 				<keymargin x="6" y="6"/>
 				<background color="#090909"/>
 				<key-alphanumeric color="#090909" font="keylabel" textcolor="#EEEEEE"/>
-				<key-other color="#111111" font="keylabel-small" textcolor="#5b5b5bff"/>
+				<key-other color="#090909" font="keylabel-small" textcolor="#5b5b5bff"/>
 				<longpress font="keylabel-longpress" textcolor="#5b5b5bff" x="40" y="4"/>
 				<keylabel key="0:c:8" text="Bksp" resource="backspace_terminal"/>
 				<keylabel key="0:action" text="Enter" resource="enter_terminal"/>
