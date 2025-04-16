@@ -3881,12 +3881,10 @@
 					</actions>
 				</listitem>
 				<listitem name="Rotate Screen to Portrait">
-					<action function="stopmtp"/>
-					<action function="rotation"/>
-					<action function="startmtp"/>
+				<action function="stopmtp"/>
+				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
-
 			<action>
 				<touch key="home"/>
 				<action function="page">main</action>
