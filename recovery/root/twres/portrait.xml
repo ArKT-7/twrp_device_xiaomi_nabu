@@ -4003,7 +4003,6 @@
 						<action function="page">confirm_action</action>
 					</actions>
 				</listitem>
-				</listitem>
 				<listitem name="Rotate Screen to Landscape">
 					<action function="stopmtp"/>
 					<action function="rotation"/>
