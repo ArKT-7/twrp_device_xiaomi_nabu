@@ -98,12 +98,12 @@ PRODUCT_SOONG_NAMESPACES += \
 # ==================================================
 # == TWRP UI Configuration ==
 # ==================================================
-TW_THEME := landscape_hdpi
-TW_ROTATION := 90
-RECOVERY_TOUCHSCREEN_SWAP_XY := true
-RECOVERY_TOUCHSCREEN_FLIP_Y := true
+#TW_THEME := landscape_hdpi
+#TW_ROTATION := 90
+#RECOVERY_TOUCHSCREEN_SWAP_XY := true
+#RECOVERY_TOUCHSCREEN_FLIP_Y := true
 # ==================================================
-#TW_THEME := portrait_hdpi
+TW_THEME := portrait_hdpi
 TW_DEVICE_VERSION := 4 Modded Recovery For Windows by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
