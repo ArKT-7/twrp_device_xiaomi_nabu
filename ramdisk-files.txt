@@ -209,6 +209,7 @@ twres/images/tab_vibration.png
 twres/images/indeterminate012.png
 twres/images/shift_terminal.png
 twres/images/shift.png
+twres/images/win.png
 twres/images/kb_arrow_up.png
 twres/images/slider_used.png
 twres/images/checkbox_true.png
@@ -273,6 +274,7 @@ twres/twres-arkt/images/indeterminate001.png
 twres/twres-arkt/images/indeterminate012.png
 twres/twres-arkt/images/shift_terminal.png
 twres/twres-arkt/images/shift.png
+twres/twres-arkt/images/win.png
 twres/twres-arkt/images/kb_arrow_up.png
 twres/twres-arkt/images/slider_used.png
 twres/twres-arkt/images/checkbox_true.png
@@ -3519,6 +3521,7 @@ system/bin/uptime
 system/bin/zip
 system/bin/bash_twrp-timestamp
 system/bin/keystore_cli_v2
+system/bin/wimlib
 system/bin/keystore2
 system/bin/pwd
 system/bin/zcat
@@ -3707,7 +3710,6 @@ system/bin/basename
 system/bin/netstat
 system/bin/pmap
 system/bin/sync
-system/bin/wimlib-imagex
 system/bin/android.hardware.boot@1.0-service
 system/bin/runcon
 system/bin/ueventd
