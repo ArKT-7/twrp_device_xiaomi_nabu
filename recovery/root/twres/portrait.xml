@@ -5556,12 +5556,12 @@
 
 			<text style="text_l">
 				<placement x="%col1_x_header%" y="%row3_header_y%"/>
-				<text>Windwos related Tools/Scripts</text>
+				<text>Windows related Tools/Scripts</text>
 			</text>
 
 			<text style="text_m">
 				<placement x="%col1_x_header%" y="%row4_header_y%"/>
-				<text>This page will upadte Soon!</text>
+				<text>This page will update Soon!</text>
 			</text>
 
 			<text style="text_m_accent">
@@ -5571,7 +5571,7 @@
 
 			<text style="text_m_accent">
 				<placement x="%center_x%" y="%row3_y%" placement="5"/>
-				<text>Like - Msc, Partition, Format, Restore, Partlition list, etc.</text>
+				<text>Like - Msc, Partition, Format, Restore, Partition list, etc.</text>
 			</text>
 
 
@@ -5584,10 +5584,7 @@
 
 			<action>
 				<touch key="back"/>
-				<actions>
-					<action function="overlay"/>
-					<action function="key">%tw_back%</action>
-				</actions>
+				<action function="page">main</action>
 			</action>
 
 			<action>

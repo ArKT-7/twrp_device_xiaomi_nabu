@@ -33,6 +33,6 @@ formatwindata
 formatwinesp
 fixgpt
 sync
-parted $disk p
+parted $disk p free
 
 echo "done!"
