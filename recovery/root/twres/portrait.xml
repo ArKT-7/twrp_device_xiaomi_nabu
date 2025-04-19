@@ -5551,6 +5551,97 @@
 			</action>
 		</page>
 
+		<page name="msc_enabled">
+			<background color="#000000CC"/>
+
+			<text>
+				<font resource="font_m" color="#FFC107"/>
+				<placement x="%center_x%" y="%row10_y%" placement="5"/>
+				<text>Mass storage is already enabled!</text>
+			</text>
+
+			<text>
+				<font resource="font_m" color="#FF9800"/>
+				<placement x="%center_x%" y="%row11_y%" placement="5"/>
+				<text>Reboot to TWRP and then switch rotation.</text>
+			</text>
+
+			<text>
+				<font resource="font_m" color="#F44336"/>
+				<placement x="%center_x%" y="%row12_y%" placement="5"/>
+				<text>Mass storage detected. Aborting screen rotation.</text>
+			</text>
+
+			
+			<button style="button_third_width">
+				<placement x="%dialog_button_x%" y="%row14_y%"/>
+				<text>{@ok_btn=OK}</text>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+
+			<fill color="#000000">
+				<placement x="0" y="row25_y" w="%screen_width%" h="%navbar_height"/>
+			</fill>
+
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="!=" var2="1"/>
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="back"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="=" var2="1"/>
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="console"/>
+				<condition var1="tw_busy" var2="0"/>
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<placement x="%center_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="home"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">home</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="!=" var2="1"/>
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="console"/>
+				<condition var1="tw_busy" var2="0"/>
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="=" var2="1"/>
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="back"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<action>
+				<touch key="power+voldown"/>
+				<action function="screenshot"/>
+			</action>
+		</page>
+
 		<page name="select_language">
 			<fill color="%semi_transparent%">
 				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
