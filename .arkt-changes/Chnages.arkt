@@ -1,0 +1,289 @@
+What changes i made to twrp sources after cloning likr this 
+
+repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
+repo sync -c --no-clone-bundle --no-tags -j4
+
+1.
+
+twrp/bootable/recovery/variables.h
+
+#define TW_MAIN_VERSION_STR       "V" here i edit version to V
+
+2.
+
+twrp/bootable/recovery/data.cpp
+
+#ifdef TW_NO_SCREEN_TIMEOUT
+	mConst.SetValue("tw_screen_timeout_secs", "0");
+	mConst.SetValue("tw_no_screen_timeout", "1");
+#else
+	mPersist.SetValue("tw_screen_timeout_secs", "0"); #here i made it (0)from (60)
+	mPersist.SetValue("tw_no_screen_timeout", "0");
+#endif
+
+3.
+
+twrp/bootable/recovery/twrp-functions.cpp
+
+# added my own funtion in last before #endif
+
+void TWFunc::PartitionSizesByArKT() {
+	std::string win_raw, esp_raw, userdata_raw;
+	std::string win_val = "NA", win_unit = "MB", win_display = "NA";
+	std::string esp_val = "NA", esp_unit = "MB", esp_display = "NA";
+	std::string userdata_val = "NA", userdata_unit = "MB", userdata_display = "NA";
+
+	auto clean_float_str = [](float value) -> std::string {
+		std::ostringstream oss;
+		oss.precision(2);
+		oss << std::fixed << value;
+		std::string out = oss.str();
+		while (out.back() == '0') out.pop_back();
+		if (out.back() == '.') out.pop_back();
+		return out;
+	};
+
+	// WIN Partition
+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'win' | awk '{print $4}'", win_raw, true) == 0) {
+		if (win_raw.find("MB") != std::string::npos)
+			win_raw = win_raw.substr(0, win_raw.find("MB"));
+		if (!win_raw.empty()) {
+			float win_mb = std::stof(win_raw);
+			if (win_mb >= 1024.0f) {
+				win_val = clean_float_str(win_mb / 1024.0f);
+				win_unit = "GB";
+			} else {
+				win_val = win_raw;
+				win_unit = "MB";
+			}
+		}
+	}
+	if (win_val == "NA") win_unit = "";
+	win_display = (win_val == "NA") ? "NA" : win_val + " " + win_unit;
+	DataManager::SetValue("tw_winpart_size", win_val);
+	DataManager::SetValue("tw_winpart_unit", win_unit);
+	DataManager::SetValue("tw_winpart_display", win_display);
+	if (win_val != "NA")
+		LOGINFO("WIN Partition Size: %s\n", win_display.c_str());
+
+	// ESP Partition
+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'esp' | awk '{print $4}'", esp_raw, true) == 0) {
+		if (esp_raw.find("MB") != std::string::npos)
+			esp_raw = esp_raw.substr(0, esp_raw.find("MB"));
+		if (!esp_raw.empty()) {
+			float esp_mb = std::stof(esp_raw);
+			if (esp_mb >= 1024.0f) {
+				esp_val = clean_float_str(esp_mb / 1024.0f);
+				esp_unit = "GB";
+			} else {
+				esp_val = esp_raw;
+				esp_unit = "MB";
+			}
+		}
+	}
+	if (esp_val == "NA") esp_unit = "";
+	esp_display = (esp_val == "NA") ? "NA" : esp_val + " " + esp_unit;
+	DataManager::SetValue("tw_esppart_size", esp_val);
+	DataManager::SetValue("tw_esppart_unit", esp_unit);
+	DataManager::SetValue("tw_esppart_display", esp_display);
+	if (esp_val != "NA")
+		LOGINFO("ESP Partition Size: %s\n", esp_display.c_str());
+
+	// USERDATA Partition
+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'userdata$' | awk '{print $4}'", userdata_raw, true) == 0) {
+		if (userdata_raw.find("MB") != std::string::npos)
+			userdata_raw = userdata_raw.substr(0, userdata_raw.find("MB"));
+		if (!userdata_raw.empty()) {
+			float userdata_mb = std::stof(userdata_raw);
+			if (userdata_mb >= 1024.0f) {
+				userdata_val = clean_float_str(userdata_mb / 1024.0f);
+				userdata_unit = "GB";
+			} else {
+				userdata_val = userdata_raw;
+				userdata_unit = "MB";
+			}
+		}
+	}
+	if (userdata_val == "NA") userdata_unit = "";
+	userdata_display = (userdata_val == "NA") ? "NA" : userdata_val + " " + userdata_unit;
+	DataManager::SetValue("tw_userdatapart_size", userdata_val);
+	DataManager::SetValue("tw_userdatapart_unit", userdata_unit);
+	DataManager::SetValue("tw_userdatapart_display", userdata_display);
+	if (userdata_val != "NA")
+		LOGINFO("USERDATA Partition Size: %s\n", userdata_display.c_str());
+}
+
+4.
+
+twrp/bootable/recovery/twrp-functions.hpp
+
+# added my funtion here so it can be accessed 
+
+    static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
+    static void PartitionSizesByArKT(); # This i added
+
+5.
+
+twrp/bootable/recovery/twrp.cpp
+
+# added to run my funtion when twrp start
+
+    // Create a thread for battery monitoring
+	static std::thread battery_monitor(monitorBatteryInBackground);
+
+	TWFunc::PartitionSizesByArKT(); // this i added
+
+# added to start mtp again when it load after switch rotation
+
+    TWFunc::checkforapp(); //Checking compatibility for TWRP app
+
+	LOGINFO("Start MTP again by ArKT \n");   //this i added
+	TWFunc::Exec_Cmd("mkdir -p /data/media");  // this i added
+	PartitionManager.Enable_MTP();  // this i added
+
+
+	//gui_msg("ARKT gui_msg Standard status message ARKT");
+	//gui_warn("ARKT gui_warn This is a warning! ARKT");
+	//gui_err("ARKT gui_err This is an error! ARKT");
+	//gui_highlight("ARKT gui_highlight Highlighted success message! ARKT");
+	//E:String resource 'ARKT gui_msg Standard status message ARKT' not found. No default value.
+	//[ARKT gui_msg Standard status message ARKT]
+	//E:String resource 'ARKT gui_warn This is a warning! ARKT' not found. No default value.
+	//[ARKT gui_warn This is a warning! ARKT]
+	//E:String resource 'ARKT gui_err This is an error! ARKT' not found. No default value.
+	//[ARKT gui_err This is an error! ARKT]
+	//E:String resource 'ARKT gui_highlight Highlighted success message! ARKT' not found. No default value.
+	//[ARKT gui_highlight Highlighted success message! ARKT]
+
+
+	// Launch the main GUI
+	gui_start();
+
+6.
+
+twrp/bootable/recovery/gui/actions.cpp
+
+# added to run the partiton size funtion when relaod theme or set eveytign default
+
+int GUIAction::reload(std::string arg __unused)
+{
+	PageManager::RequestReload();
+	// The actual reload is handled in pages.cpp in PageManager::RunReload()
+	// The reload will occur on the next Update or Render call and will
+	// be performed in the rendoer thread instead of the action thread
+	// to prevent crashing which could occur when we start deleting
+	// GUI resources in the action thread while we attempt to render
+	// with those same resources in another thread.
+	TWFunc::PartitionSizesByArKT(); // this i added
+	return 0;
+}
+
+int GUIAction::restoredefaultsettings(std::string arg __unused)
+{
+	operation_start("Restore Defaults");
+	if (simulate) // Simulated so that people don't accidently wipe out the "simulation is on" setting
+		gui_msg("simulating=Simulating actions...");
+	else {
+		DataManager::ResetDefaults();
+		PartitionManager.Update_System_Details();
+		PartitionManager.Mount_Current_Storage(true);
+	}
+	operation_end(0);
+	TWFunc::PartitionSizesByArKT();  // this i added
+	return 0;
+}
+
+# added my funtion to rotate screen in last of the code
+
+int GUIAction::rotationbyarkt(std::string arg __unused)
+{
+	LOGINFO("TWRP ROTATION BY ARKT...\n");
+	// === Check if MSC is enabled ===
+	if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
+		LOGINFO("Mass storage is already enabled! Reboot and run the script again.\n");
+	    LOGINFO("Mass storage detected. Aborting theme rotation.\n");
+		// Show your custom GUI page
+		gui_changeOverlay("msc_enabled");
+		return 1;
+	}
+	
+
+    // === Backup current layout XMLs and images ===
+    LOGINFO("Backing up current twres...\n");
+    system("mkdir -p /twres/twres-arkt/backup");
+    system("mv /twres/ui.xml /twres/twres-arkt/backup/ui.xml");
+    system("mv /twres/splash.xml /twres/twres-arkt/backup/splash.xml");
+    system("mv /twres/images /twres/twres-arkt/backup/images");
+    system("[ -f /twres/portrait.xml ] && mv /twres/portrait.xml /twres/twres-arkt/backup/portrait.xml");
+    system("[ -f /twres/landscape.xml ] && mv /twres/landscape.xml /twres/twres-arkt/backup/landscape.xml");
+
+    // === Copy in new layout from twres-arkt ===
+    LOGINFO("Swapping in new layout...\n");
+    system("mv /twres/twres-arkt/ui.xml /twres/");
+    system("mv /twres/twres-arkt/splash.xml /twres/");
+    system("mv /twres/twres-arkt/images /twres/");
+    system("[ -f /twres/twres-arkt/portrait.xml ] && mv /twres/twres-arkt/portrait.xml /twres/");
+    system("[ -f /twres/twres-arkt/landscape.xml ] && mv /twres/twres-arkt/landscape.xml /twres/");
+
+    // === Restore previous layout to arkt backup ===
+    LOGINFO("Moving previous layout into /twres-arkt...\n");
+    system("mv /twres/twres-arkt/backup/ui.xml /twres/twres-arkt/ui.xml");
+    system("mv /twres/twres-arkt/backup/splash.xml /twres/twres-arkt/splash.xml");
+    system("mv /twres/twres-arkt/backup/images /twres/twres-arkt/images");
+    system("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
+    system("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
+
+    // === libminuitwrp.so swap ===
+    system("[ -f /system/lib64/libminuitwrp.so ] && mv /system/lib64/libminuitwrp.so /system/lib64/libminuitwrp-arkt-1.so");
+    system("[ -f /system/lib64/libminuitwrp-arkt.so ] && mv /system/lib64/libminuitwrp-arkt.so /system/lib64/libminuitwrp.so");
+    system("[ -f /system/lib64/libminuitwrp-arkt-1.so ] && mv /system/lib64/libminuitwrp-arkt-1.so /system/lib64/libminuitwrp-arkt.so");
+
+	// === ramdisk-files-arkt.so swap ===
+    system("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
+    system("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
+    system("[ -f /ramdisk-files-arkt-1.txt ] && mv /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt");
+
+    // === Fix mounts and start MTP again ===
+       // === Fix mounts and restart MTP ===
+    LOGINFO("Unmounting and reinitializing...\n");
+    DataManager::Flush();
+    system("umount -l /dev/block/platform/soc/1d84000.ufshc/by-name/esp");
+    system("umount -l /dev/block/platform/soc/1d84000.ufshc/by-name/win");
+    LOGINFO("Unmounting DONE...\n");
+   // === Fork + signal recovery to reload ===
+    pid_t pid = fork();
+    if (pid == 0) {
+        ::sleep(1);  
+		LOGINFO("KILLING TWRP FOR ROTATION...\n");
+        execlp("killall", "killall", "-SIGUSR1", "recovery", (char*)nullptr);
+        _exit(0); // child exit
+    }
+
+	// android::base::SetProperty("sys.usb.config", "adb");
+	LOGINFO("KILLING DONE...\n");
+    // Main function ends here
+	LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
+    return 0;
+}
+
+7.
+
+twrp/bootable/recovery/gui/objects.cpp
+
+#here i added my funtion under //GUI actions
+
+    int removedynamicgroups(std:: string arg);
+	int rotationbyarkt(std:: string arg); // this i added
+
+
+8.
+
+twrp/build/core/Makefile
+
+# here i edited ramdisk-list.sha256sum to exclude some files as they swap when do rotation and if not exclude then permanent flashing will not work
+
+	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
+	cd $(TARGET_RECOVERY_ROOT_OUT) && touch ramdisk-files.txt && touch ramdisk-files.sha256sum && find . | sed "s/.\///" | sed "/lib\/modules\//d" > ramdisk-files.txt
+	cd $(TARGET_RECOVERY_ROOT_OUT) && find -type f | sed "s/.\/ramdisk-files.sha256sum//" | sed "/lib\/modules/d" | sed "/prop.default/d" | grep -vE "(./twres/images/main_button_half_height.png|./twres/images/indeterminate010.png|./twres/images/indeterminate008.png|./twres/images/slider.png|./twres/images/sort_empty.png|./twres/images/tab_4.png|./twres/images/kb_show.png|./twres/images/checkbox_false.png|./twres/images/space.png|./twres/images/sort_asc.png|./twres/images/indeterminate001.png|./twres/images/tab_vibration.png|./twres/images/indeterminate012.png|./twres/images/shift.png|./twres/images/kb_arrow_up.png|./twres/images/slider_used.png|./twres/images/checkbox_true.png|./twres/images/file.png|./twres/images/logo.png|./twres/images/slider_touch.png|./twres/images/indeterminate007.png|./twres/images/indeterminate003.png|./twres/images/back.png|./twres/images/folder.png|./twres/images/indeterminate005.png|./twres/images/indeterminate009.png|./twres/images/main_button.png|./twres/images/fab_selectfolder.png|./twres/images/kb_arrow_down.png|./twres/images/kb_hide.png|./twres/images/tab_timezone.png|./twres/images/indeterminate002.png|./twres/images/tab_display.png|./twres/images/home.png|./twres/images/progress_empty.png|./twres/images/kb_arrow_left.png|./twres/images/handle.png|./twres/images/progress_fill.png|./twres/images/radio_true.png|./twres/images/indeterminate006.png|./twres/images/tab_language.png|./twres/images/radio_false.png|./twres/images/kb_arrow_right.png|./twres/images/tab_general.png|./twres/images/indeterminate004.png|./twres/images/indeterminate011.png|./twres/images/sort_desc.png|./twres/images/console.png|./twres/images/tab_3.png|./twres/images/backspace.png|./twres/images/main_button_half_height_full_width.png|./twres/images/enter.png|./twres/images/shift_fill.png|./twres/twres-arkt/images/indeterminate010.png|./twres/twres-arkt/images/indeterminate008.png|./twres/twres-arkt/images/slider.png|./twres/twres-arkt/images/sort_empty.png|./twres/twres-arkt/images/tab_4.png|./twres/twres-arkt/images/kb_show.png|./twres/twres-arkt/images/checkbox_false.png|./twres/twres-arkt/images/space.png|./twres/twres-arkt/images/sort_asc.png|./twres/twres-arkt/images/indeterminate001.png|./twres/twres-arkt/images/indeterminate012.png|./twres/twres-arkt/images/shift.png|./twres/twres-arkt/images/kb_arrow_up.png|./twres/twres-arkt/images/slider_used.png|./twres/twres-arkt/images/checkbox_true.png|./twres/twres-arkt/images/file.png|./twres/twres-arkt/images/logo.png|./twres/twres-arkt/images/slider_touch.png|./twres/twres-arkt/images/indeterminate007.png|./twres/twres-arkt/images/indeterminate003.png|./twres/twres-arkt/images/back.png|./twres/twres-arkt/images/folder.png|./twres/twres-arkt/images/indeterminate005.png|./twres/twres-arkt/images/indeterminate009.png|./twres/twres-arkt/images/main_button.png|./twres/twres-arkt/images/kb_arrow_down.png|./twres/twres-arkt/images/kb_hide.png|./twres/twres-arkt/images/indeterminate002.png|./twres/twres-arkt/images/home.png|./twres/twres-arkt/images/progress_empty.png|./twres/twres-arkt/images/kb_arrow_left.png|./twres/twres-arkt/images/handle.png|./twres/twres-arkt/images/progress_fill.png|./twres/twres-arkt/images/radio_true.png|./twres/twres-arkt/images/indeterminate006.png|./twres/twres-arkt/images/radio_false.png|./twres/twres-arkt/images/kb_arrow_right.png|./twres/twres-arkt/images/indeterminate004.png|./twres/twres-arkt/images/indeterminate011.png|./twres/twres-arkt/images/sort_desc.png|./twres/twres-arkt/images/console.png|./twres/twres-arkt/images/tab_3.png|./twres/twres-arkt/images/backspace.png|./twres/twres-arkt/images/enter.png|./twres/twres-arkt/images/shift_fill.png|./twres/twres-arkt/splash.xml|./twres/twres-arkt/landscape.xml|./twres/twres-arkt/ui.xml|./twres/splash.xml|./twres/portrait.xml|./twres/ui.xml|./system/lib64/libminuitwrp.so|./system/lib64/libminuitwrp-arkt.so|./ramdisk-files.txt|./ramdisk-files-arkt.txt)" | xargs sha256sum > ramdisk-files.sha256sum
+	$(BOARD_RECOVERY_IMAGE_PREPARE)
+	$(hide) touch $@
