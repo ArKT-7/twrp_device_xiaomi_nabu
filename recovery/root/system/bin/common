@@ -26,7 +26,6 @@ removeparts
 parted -s /dev/block/sda mkpart userdata ext4 10872MB  100%
 sgdisk --resize-table 32 /dev/block/sda
 sync
-fixgpt
 formatdata
 }
 

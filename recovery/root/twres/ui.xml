@@ -24,6 +24,7 @@
 		<font name="keylabel-longpress" filename="RobotoCondensed-Regular.ttf" size="32"/>
 
 		<image name="logo" filename="logo" retainaspect="1"/>
+		<image name="win" filename="win" retainaspect="1"/>
 		<image name="main_button" filename="main_button"/>
 		<image name="main_button_half_height" filename="main_button_half_height"/>
 		<image name="main_button_half_height_full_width" filename="main_button_half_height_full_width"/>
@@ -257,6 +258,21 @@
 				<placement x="0" y="0"/>
 				<image resource="logo"/>
 				<action function="key">home</action>
+			</button>
+
+			<image>
+				<condition var1="tw_busy" var2="1"/>
+				<image resource="win"/>
+				<placement x="936" y="88"/>
+			</image>
+
+			<button>
+				<image resource="win"/>
+				<condition var1="tw_busy" var2="0"/>
+				<placement x="936" y="88"/>
+				<actions>
+					<action function="page">wintools</action>
+				</actions>
 			</button>
 
 			<fill color="#00000030">

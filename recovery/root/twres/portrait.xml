@@ -5551,6 +5551,51 @@
 			</action>
 		</page>
 
+		<page name="wintools">
+			<template name="page"/>
+
+			<text style="text_l">
+				<placement x="%col1_x_header%" y="%row3_header_y%"/>
+				<text>Windwos related Tools/Scripts</text>
+			</text>
+
+			<text style="text_m">
+				<placement x="%col1_x_header%" y="%row4_header_y%"/>
+				<text>This page will upadte Soon!</text>
+			</text>
+
+			<text style="text_m_accent">
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>Here will put buttons for windows related actions</text>
+			</text>
+
+			<text style="text_m_accent">
+				<placement x="%center_x%" y="%row3_y%" placement="5"/>
+				<text>Like - Msc, Partition, Format, Restore, Partlition list, etc.</text>
+			</text>
+
+
+			<slider>
+				<text>Swipe to go home screen</text>
+				<actions>
+					<action function="page">main</action>
+				</actions>
+			</slider>
+
+			<action>
+				<touch key="back"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</action>
+
+			<action>
+				<touch key="home"/>
+				<action function="page">main</action>
+			</action>
+		</page>
+
 		<page name="msc_enabled">
 			<background color="#000000CC"/>
 
