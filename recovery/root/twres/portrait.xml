@@ -5564,16 +5564,26 @@
 				<text>This page will update Soon!</text>
 			</text>
 
+			<button style="main_button">
+				<placement x="%indent%" y="%row2a_y%"/>
+				<text>Enable MSC</text>
+				<action function="mscbyarkt"/>
+			</button>
+
+			<button style="main_button">
+				<placement x="%center_x%" y="%row2a_y%"/>
+				<text>Format Win (NA)</text>
+			</button>
+
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<placement x="%center_x%" y="%row9_y%" placement="5"/>
 				<text>Here will put buttons for windows related actions</text>
 			</text>
 
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row3_y%" placement="5"/>
+				<placement x="%center_x%" y="%row10_y%" placement="5"/>
 				<text>Like - Msc, Partition, Format, Restore, Partition list, etc.</text>
 			</text>
-
 
 			<slider>
 				<text>Swipe to go home screen</text>
@@ -5598,29 +5608,32 @@
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row10_y%" placement="5"/>
+				<placement x="%center_x%" y="%row11_y%" placement="5"/>
 				<text>Mass storage is already enabled!</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FF9800"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
-				<text>Reboot to TWRP and then switch rotation.</text>
-			</text>
-
-			<text>
-				<font resource="font_m" color="#F44336"/>
 				<placement x="%center_x%" y="%row12_y%" placement="5"/>
-				<text>Mass storage detected. Aborting screen rotation.</text>
+				<text>Do you want to Re-enable it?</text>
 			</text>
 
-			
 			<button style="button_third_width">
-				<placement x="%dialog_button_x%" y="%row14_y%"/>
-				<text>{@ok_btn=OK}</text>
+				<placement x="180" y="%row14_y%"/>
+				<text>No</text>
 				<actions>
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button style="button_third_width">
+				<placement x="580" y="%row14_y%"/>
+				<text>Yes</text>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				    <action function="mscbyarkt">pass</action>
 				</actions>
 			</button>
 
