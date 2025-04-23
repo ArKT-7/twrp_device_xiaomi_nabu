@@ -351,7 +351,7 @@
 				<placement x="%col_button_right%" y="%row13a_y%"/>
 				<text>{@install_zip_btn=Install Zip}</text>
 				<actions>
-					<action function="set">tw_selectimage=1</action>
+					<action function="set">tw_selectimage=0</action>
 					<action function="page">install</action>
 				</actions>
 			</button>
@@ -383,6 +383,7 @@
 				</conditions>
 				<actions>
 					<action function="set">tw_is_slot_part=0</action>
+					<action function="set">tw_flash_both_slots=1</action>
 					<action function="page">flashimage_confirm</action>
 				</actions>
 			</action>
