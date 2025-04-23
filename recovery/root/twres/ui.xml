@@ -87,7 +87,7 @@
 		<variable name="console_button_x" value="840"/>
 		<variable name="indent" value="26"/>
 		<variable name="col1_x_left" value="72"/>
-		<variable name="col1_x_header" value="184"/>
+		<variable name="col1_x_header" value="150"/>
 		<variable name="center_x" value="540"/>
 		<variable name="col1_x_right" value="576"/>
 		<variable name="indent_right" value="1044"/>
@@ -250,12 +250,12 @@
 			<image>
 				<condition var1="tw_busy" var2="1"/>
 				<image resource="logo"/>
-				<placement x="0" y="0"/>
+				<placement x="-6" y="0"/>
 			</image>
 
 			<button>
 				<condition var1="tw_busy" var2="0"/>
-				<placement x="0" y="0"/>
+				<placement x="-6" y="0"/>
 				<image resource="logo"/>
 				<action function="key">home</action>
 			</button>
