@@ -339,7 +339,8 @@
 					<condition var1="tw_filename" op="modified"/>
 				</conditions>
 				<actions>
-					<action function="set">tw_is_slot_part=1</action>
+					<action function="set">tw_is_slot_part=0</action>
+					<action function="set">tw_flash_both_slots=1</action>
 					<action function="page">flashimage_confirm</action>
 				</actions>
 			</action>
