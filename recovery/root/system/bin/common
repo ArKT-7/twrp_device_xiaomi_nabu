@@ -85,10 +85,6 @@ if [ "$ignoreweirdness" != true ]; then
             exit 1
         }
         echo "Restoring the stock partition layout now..."
-        for i in $weirdparts; do
-            f="${i:14}"
-            parted -s /dev/block/sda rm $f 2>/dev/null
-        done
         restore
         exit 0
     fi
