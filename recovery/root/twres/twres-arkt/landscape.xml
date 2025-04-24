@@ -1330,6 +1330,7 @@
 
 			<action>
 				<condition var1="tw_confirm_formatdata" op="!=" var2="yes"/>
+				<action function="set">tw_confirm_formatdata=</action>
 				<action function="page">formatdata</action>
 			</action>
 		</page>
