@@ -5732,7 +5732,8 @@ edi				<conditions>
 
 			<button style="main_button">
 				<placement x="%center_x%" y="%row2_y%"/>
-				<text>Format Windows (NA)</text>
+				<text>Format Windows</text>
+				<action function="overlay">winformat_warn</action>
 			</button>
 
 			<text style="text_m_accent">
@@ -5742,7 +5743,7 @@ edi				<conditions>
 
 			<text style="text_m_accent">
 				<placement x="%center_x%" y="%row8_y%" placement="5"/>
-				<text>Like - Msc, Partition, Format, Restore, Partition list, etc.</text>
+				<text>Like - Partition, Restore, Partition list, etc.</text>
 			</text>
 
 			<slider>
@@ -5760,6 +5761,225 @@ edi				<conditions>
 			<action>
 				<touch key="home"/>
 				<action function="page">main</action>
+			</action>
+		</page>
+
+		<page name="winformat_warn">
+			<background color="#000000CC"/>
+
+			<text style="text_m_fail">
+				<placement x="%center_x%" y="%row1_y%" placement="5"/>
+				<text>This will Format/wipe all data on Windows Partition,</text>
+			</text>
+
+			<text style="text_m_fail">
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>if there any data like backups, pictures, videos, media.</text>
+			</text>
+
+			<text>
+				<font resource="font_m" color="#FFC107"/>
+				<placement x="%center_x%" y="%row3_y%" placement="5"/>
+				<text>This will not delete Andorid Data.</text>
+			</text>
+
+			<text style="text_m">
+				<placement x="%center_x%" y="%row5_y%" placement="5"/>
+				<text>{@format_data_undo=This cannot be undone.}</text>
+			</text>
+
+			<text style="text_m">
+				<placement x="%center_x%" y="%row6_y%" placement="5"/>
+				<text>{@yes_continue=Type yes to continue.  Press back to cancel.}</text>
+			</text>
+
+			<input>
+				<placement x="%col1_x_left%" y="%row8_y%" w="%content_width%" h="%input_height%"/>
+				<text>%tw_confirm_formatwin%</text>
+				<data name="tw_confirm_formatwin"/>
+				<restrict minlen="3" maxlen="3" allow="yes"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+					<action function="set">tw_confirm_formatwin=</action>
+				    <action function="formatwinbyarkt"/>
+				</actions>
+			</input>
+
+			<fill color="%accent_color%">
+				<placement x="%col1_x_left%" y="row9_y" w="%content_width%" h="input_line_width"/>
+			</fill>
+
+			<template name="keyboardtemplate"/>
+
+
+			<fill color="#000000">
+				<placement x="0" y="row25_y" w="%screen_width%" h="%navbar_height"/>
+			</fill>
+
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="0" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="0" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="0" />
+				<placement x="%center_x%" y="%navbar_btn_y%" placement="4" />
+				<image resource="home" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">home</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="0" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="0" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="1" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%back_button_x_1%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="1" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%back_button_x_1%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="1" />
+				<placement x="%home_button_x_1%" y="%navbar_btn_y%" placement="4" />
+				<image resource="home" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">home</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="1" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%console_button_x_1%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="1" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%console_button_x_1%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="2" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%back_button_x_2%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="2" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%back_button_x_2%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="2" />
+				<placement x="%home_button_x_2%" y="%navbar_btn_y%" placement="4" />
+				<image resource="home" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">home</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="2" />
+				<condition var1="tw_samsung_navbar" op="!=" var2="1" />
+				<placement x="%console_button_x_2%" y="%navbar_btn_y%" placement="4" />
+				<image resource="console" />
+				<condition var1="tw_busy" var2="0" />
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_navbar_button_position" op="=" var2="2" />
+				<condition var1="tw_samsung_navbar" op="=" var2="1" />
+				<placement x="%console_button_x_2%" y="%navbar_btn_y%" placement="4" />
+				<image resource="back" />
+				<condition var1="tw_busy" var2="0" />
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<action>
+				<touch key="power+voldown"/>
+				<action function="screenshot"/>
 			</action>
 		</page>
 
