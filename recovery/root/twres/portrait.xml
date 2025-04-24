@@ -5178,12 +5178,12 @@
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="0"/>
-				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%console_terminal_height%"/>
+				<placement x="0" y="%row3_header_y%" w="1510" h="%console_terminal_height%"/>
 			</terminal>
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="1"/>
-				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%slideout_height%"/>
+				<placement x="0" y="%row3_header_y%" w="1510" h="%slideout_height%"/>
 			</terminal>
 
 			<template name="keyboardterminaltemplate"/>
