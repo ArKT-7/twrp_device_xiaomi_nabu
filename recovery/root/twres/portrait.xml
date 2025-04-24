@@ -5578,14 +5578,20 @@
 				<action function="overlay">winformat_warn</action>
 			</button>
 
+			<button style="main_button">
+				<placement x="%indent%" y="%row8_y%"/>
+				<text>List Partitions</text>
+				<action function="printpartitionsbyarkt"/>
+			</button>
+
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row9_y%" placement="5"/>
+				<placement x="%center_x%" y="%row15_y%" placement="5"/>
 				<text>Here will put buttons for windows related actions</text>
 			</text>
 
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row10_y%" placement="5"/>
-				<text>Like - Partition, Restore, Partition list, etc.</text>
+				<placement x="%center_x%" y="%row16_y%" placement="5"/>
+				<text>Like - Partition, Restore, resize, etc.</text>
 			</text>
 
 			<slider>

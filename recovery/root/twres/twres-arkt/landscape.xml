@@ -5737,14 +5737,20 @@ edi				<conditions>
 				<action function="overlay">winformat_warn</action>
 			</button>
 
+			<button style="main_button">
+				<placement x="%col1_x_left%" y="%row6a_y%"/>
+				<text>List Partitions</text>
+				<action function="printpartitionsbyarkt"/>
+			</button>
+
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row7_y%" placement="5"/>
+				<placement x="%center_x%" y="%row12_y%" placement="5"/>
 				<text>Here will put buttons for windows related actions</text>
 			</text>
 
 			<text style="text_m_accent">
-				<placement x="%center_x%" y="%row8_y%" placement="5"/>
-				<text>Like - Partition, Restore, Partition list, etc.</text>
+				<placement x="%center_x%" y="%row13_y%" placement="5"/>
+				<text>Like - Partition, Restore, resize, etc.</text>
 			</text>
 
 			<slider>
