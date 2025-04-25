@@ -4006,7 +4006,6 @@
 					</actions>
 				</listitem>
 				<listitem name="Rotate Screen to Landscape">
-				<action function="stopmtp"/>
 				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
