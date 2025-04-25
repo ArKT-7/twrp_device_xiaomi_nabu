@@ -3883,7 +3883,6 @@
 					</actions>
 				</listitem>
 				<listitem name="Rotate Screen to Portrait">
-				<action function="stopmtp"/>
 				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
