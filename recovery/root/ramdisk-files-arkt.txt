@@ -3643,6 +3643,7 @@ system/bin/uname
 system/bin/uniq
 system/bin/fgrep
 system/bin/ziptool
+system/bin/ntfsfix
 system/bin/xargs
 system/bin/fsck.f2fs
 system/bin/sha256sum
@@ -3655,6 +3656,7 @@ system/bin/stty
 system/bin/servicemanager
 system/bin/losetup
 system/bin/readlink
+system/bin/ntfsresize
 system/bin/rmdir
 system/bin/gzip
 system/bin/vold_prepare_subdirs
