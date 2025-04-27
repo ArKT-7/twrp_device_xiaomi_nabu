@@ -28,4 +28,4 @@
 /esp           vfat   /dev/block/bootdevice/by-name/esp                          flags=fsflags=utf8;display="ESP";storage
 
 # Removable storage
-/usb_otg       vfat    /dev/block/sdg1                    /dev/block/sdg         flags=fsflags=utf8;display="USB-OTG";storage;wipeingui;removable
+/usbstorage    auto    /dev/block/sdg1                    /dev/block/sdg         flags=fsflags=utf8;display="USB Storage";storage;wipeingui;removable
