@@ -338,6 +338,7 @@ twres/fonts/DroidSansFallback.ttf
 twres/fonts/NotoSansCJKjp-Regular.ttf
 twres/fonts/OFL.txt
 twres/fonts/DroidSansMono.ttf
+twres/fonts/DroidSansMono-term.ttf
 twres/fonts/RobotoCondensed-Regular.ttf
 twres/landscape.xml
 twres/ui.xml
