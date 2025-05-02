@@ -106,13 +106,13 @@
 		<style name="console">
 			<fastscroll rectcolor="%accent_color%" w="%fastscroll_w%" rectw="%fastscroll_rectw%" recth="%fastscroll_recth%"/>
 			<color foreground="%text_color%" background="%background_color%" scroll="%background_color%"/>
-			<font resource="fixed"/>
+			<font resource="term"/>
 		</style>
 
 		<style name="terminal">
 			<fastscroll linecolor="%transparent%" rectcolor="%accent_color%" w="%fastscroll_w%" rectw="%fastscroll_rectw%" recth="%fastscroll_recth%"/>
 			<background color="%background_color%"/>
-			<font resource="fixed" spacing="3" color="%text_color%"/>
+			<font resource="term" spacing="3" color="%text_color%"/>
 		</style>
 
 		<style name="fileselector">
@@ -170,6 +170,13 @@
 			<fastscroll linecolor="%fileselector_linecolor%" rectcolor="%accent_color%" w="%fastscroll_w%" linew="%fastscroll_linew%" rectw="%fastscroll_rectw%" recth="%fastscroll_recth%"/>
 			<separator color="%fileselector_linecolor%" height="%fileselector_separatorheight%"/>
 			<dimensions lineh="%slidervalue_lineh%" linepadding="%slidervalue_padding%" sliderw="%slidervalue_sliderw%" sliderh="%slidervalue_sliderh%"/>
+			<icon selected="handle" unselected="handle"/>
+			<background color="%background_color%"/>
+			<font resource="font_m" spacing="%fileselector_spacing%" color="%text_color%" highlightcolor="%accent_color%"/>
+		</style>
+
+		<style name="advanced_listbox_arkt">
+			<highlight color="%highlight_color%"/>
 			<icon selected="handle" unselected="handle"/>
 			<background color="%background_color%"/>
 			<font resource="font_m" spacing="%fileselector_spacing%" color="%text_color%" highlightcolor="%accent_color%"/>
@@ -5045,12 +5052,12 @@ edi				<conditions>
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="0"/>
-				<placement x="0" y="%row3_header_y%" w="2350" h="%terminal_s_height%"/>
+				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%terminal_s_height%"/>
 			</terminal>
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="1"/>
-				<placement x="0" y="%row3_header_y%" w="2350" h="%terminal_l_height%"/>
+				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%terminal_l_height%"/>
 			</terminal>
 
 			<template name="keyboardterminaltemplate"/>
@@ -5721,7 +5728,7 @@ edi				<conditions>
 
 			<text style="text_m">
 				<placement x="%col1_x_header%" y="%row4_header_y%"/>
-				<text>TThis page will update Soon!</text>
+				<text>This page will update Soon!</text>
 			</text>
 
 			<button style="main_button">
@@ -5752,12 +5759,27 @@ edi				<conditions>
 				<text>Like - Partition, Restore, resize, etc.</text>
 			</text>
 
-			<slider>
-				<text>Swipe to go home screen</text>
-				<actions>
-					<action function="page">main</action>
-				</actions>
-			</slider>
+			<listbox style="advanced_listbox_arkt">
+				<placement x="104" y="%row15a_y%" w="406" h="200"/>
+				<listitem name=" Reboot device">
+				<action function="rebootbyarkt">r</action>
+				</listitem>
+				<listitem name=" Reboot to Bootloader">
+				<action function="rebootbyarkt">rtbl</action>
+				</listitem>
+
+			</listbox>
+
+			<listbox style="advanced_listbox_arkt">
+				<placement x="522" y="%row15a_y%" w="386" h="200"/>
+				<listitem name=" Reboot to Recovery">
+				<action function="rebootbyarkt">rtr</action>
+				</listitem>
+				<listitem name=" Power Off device">
+				<action function="rebootbyarkt">off</action>
+				</listitem>
+
+			</listbox>
 
 			<action>
 				<touch key="back"/>

@@ -77,13 +77,13 @@
 		<style name="console">
 			<fastscroll rectcolor="%accent_color%" w="%fastscroll_w%" rectw="%fastscroll_rectw%" recth="%fastscroll_recth%"/>
 			<color foreground="%text_color%" background="%background_color%" scroll="%background_color%"/>
-			<font resource="fixed"/>
+			<font resource="term"/>
 		</style>
 
 		<style name="terminal">
 			<fastscroll linecolor="%transparent%" rectcolor="%accent_color%" w="%fastscroll_w%" rectw="%fastscroll_rectw%" recth="%fastscroll_recth%"/>
 			<background color="%background_color%"/>
-			<font resource="fixed" spacing="3" color="%text_color%"/>
+			<font resource="term" spacing="3" color="%text_color%"/>
 		</style>
 
 		<style name="fileselector">
@@ -144,6 +144,13 @@
 			<icon selected="handle" unselected="handle"/>
 			<background color="%background_color%"/>
 			<font resource="font_m" spacing="%fileselector_spacing%" color="%text_color%" highlightcolor="%accent_color%"/>
+		</style>
+
+		<style name="advanced_listbox_arkt">
+			<highlight color="%highlight_color%"/>
+			<icon selected="handle" unselected="handle"/>
+			<background color="%background_color%"/>
+			<font resource="font_s" spacing="%fileselector_spacing%" color="%text_color%" highlightcolor="%accent_color%"/>
 		</style>
 
 		<style name="options_listbox">
@@ -5177,12 +5184,12 @@
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="0"/>
-				<placement x="0" y="%row3_header_y%" w="1510" h="%console_terminal_height%"/>
+				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%console_terminal_height%"/>
 			</terminal>
 
 			<terminal>
 				<condition var1="tw_hide_kb" var2="1"/>
-				<placement x="0" y="%row3_header_y%" w="1510" h="%slideout_height%"/>
+				<placement x="0" y="%row3_header_y%" w="%screen_width%" h="%slideout_height%"/>
 			</terminal>
 
 			<template name="keyboardterminaltemplate"/>
@@ -5593,12 +5600,27 @@
 				<text>Like - Partition, Restore, resize, etc.</text>
 			</text>
 
-			<slider>
-				<text>Swipe to go home screen</text>
-				<actions>
-					<action function="page">main</action>
-				</actions>
-			</slider>
+			<listbox style="advanced_listbox_arkt">
+				<placement x="70" y="%row20_y%" w="420" h="220"/>
+				<listitem name=" Reboot device">
+				<action function="rebootbyarkt">r</action>
+				</listitem>
+				<listitem name=" Reboot to Bootloader">
+				<action function="rebootbyarkt">rtbl</action>
+				</listitem>
+
+			</listbox>
+
+			<listbox style="advanced_listbox_arkt">
+				<placement x="582" y="%row20_y%" w="420" h="220"/>
+				<listitem name=" Reboot to Recovery">
+				<action function="rebootbyarkt">rtr</action>
+				</listitem>
+				<listitem name=" Power Off device">
+				<action function="rebootbyarkt">off</action>
+				</listitem>
+
+			</listbox>
 
 			<action>
 				<touch key="back"/>
