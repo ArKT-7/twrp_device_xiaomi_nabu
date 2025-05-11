@@ -1,6 +1,6 @@
-diff -ruN /home/arkt/android/twrp/bootable/recovery/data.cpp /home/arkt/android/arkt-twrp/bootable/recovery/data.cpp
---- /home/arkt/android/twrp/bootable/recovery/data.cpp	2025-04-20 00:02:17.519436866 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/data.cpp	2025-04-18 16:51:18.736500404 +0530
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/data.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/data.cpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/data.cpp	2025-04-25 16:37:47.055569123 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/data.cpp	2025-04-26 00:43:30.909089305 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -10,18 +10,23 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/data.cpp /home/arkt/android/
  	mPersist.SetValue("tw_no_screen_timeout", "0");
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
-diff -ruN /home/arkt/android/twrp/bootable/recovery/gui/action.cpp /home/arkt/android/arkt-twrp/bootable/recovery/gui/action.cpp
---- /home/arkt/android/twrp/bootable/recovery/gui/action.cpp	2025-04-20 00:02:17.532770078 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/gui/action.cpp	2025-04-19 16:20:28.562544165 +0530
-@@ -209,6 +209,7 @@
+Binary files /home/arkt/android/back-twrp-arkt-new/bootable/recovery/.git/index and /home/arkt/android/latest-twrp-arkt/bootable/recovery/.git/index differ
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/action.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/action.cpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/action.cpp	2025-04-25 16:37:47.222237358 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/action.cpp	2025-05-02 16:55:41.379115865 +0530
+@@ -209,6 +209,11 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
 +		ADD_ACTION(rotationbyarkt);
++		ADD_ACTION(mscbyarkt);
++		ADD_ACTION(formatwinbyarkt);
++		ADD_ACTION(printpartitionsbyarkt);
++		ADD_ACTION(rebootbyarkt);
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -593,6 +594,7 @@
+@@ -593,6 +598,7 @@
  	// to prevent crashing which could occur when we start deleting
  	// GUI resources in the action thread while we attempt to render
  	// with those same resources in another thread.
@@ -29,7 +34,7 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/gui/action.cpp /home/arkt/an
  	return 0;
  }
  
-@@ -668,6 +670,7 @@
+@@ -668,6 +674,7 @@
  		PartitionManager.Mount_Current_Storage(true);
  	}
  	operation_end(0);
@@ -37,95 +42,127 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/gui/action.cpp /home/arkt/an
  	return 0;
  }
  
-@@ -2365,3 +2368,74 @@
+@@ -2365,3 +2372,101 @@
  	operation_end(op_status);
  	return 0;
  }
 +
-+int GUIAction::rotationbyarkt(std::string arg __unused)
++int GUIAction::mscbyarkt(std::string arg)
 +{
-+	LOGINFO("TWRP ROTATION BY ARKT...\n");
-+	// === Check if MSC is enabled ===
-+	if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+		LOGINFO("Mass storage is already enabled! Reboot and run the script again.\n");
-+	    LOGINFO("Mass storage detected. Aborting theme rotation.\n");
-+		// Show your custom GUI page
-+		gui_changeOverlay("msc_enabled");
-+		return 1;
-+	}
-+	
-+
-+    // === Backup current layout XMLs and images ===
-+    LOGINFO("Backing up current twres...\n");
-+    system("mkdir -p /twres/twres-arkt/backup");
-+    system("mv /twres/ui.xml /twres/twres-arkt/backup/ui.xml");
-+    system("mv /twres/splash.xml /twres/twres-arkt/backup/splash.xml");
-+    system("mv /twres/images /twres/twres-arkt/backup/images");
-+    system("[ -f /twres/portrait.xml ] && mv /twres/portrait.xml /twres/twres-arkt/backup/portrait.xml");
-+    system("[ -f /twres/landscape.xml ] && mv /twres/landscape.xml /twres/twres-arkt/backup/landscape.xml");
-+
-+    // === Copy in new layout from twres-arkt ===
-+    LOGINFO("Swapping in new layout...\n");
-+    system("mv /twres/twres-arkt/ui.xml /twres/");
-+    system("mv /twres/twres-arkt/splash.xml /twres/");
-+    system("mv /twres/twres-arkt/images /twres/");
-+    system("[ -f /twres/twres-arkt/portrait.xml ] && mv /twres/twres-arkt/portrait.xml /twres/");
-+    system("[ -f /twres/twres-arkt/landscape.xml ] && mv /twres/twres-arkt/landscape.xml /twres/");
-+
-+    // === Restore previous layout to arkt backup ===
-+    LOGINFO("Moving previous layout into /twres-arkt...\n");
-+    system("mv /twres/twres-arkt/backup/ui.xml /twres/twres-arkt/ui.xml");
-+    system("mv /twres/twres-arkt/backup/splash.xml /twres/twres-arkt/splash.xml");
-+    system("mv /twres/twres-arkt/backup/images /twres/twres-arkt/images");
-+    system("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
-+    system("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
-+
-+    // === libminuitwrp.so swap ===
-+    system("[ -f /system/lib64/libminuitwrp.so ] && mv /system/lib64/libminuitwrp.so /system/lib64/libminuitwrp-arkt-1.so");
-+    system("[ -f /system/lib64/libminuitwrp-arkt.so ] && mv /system/lib64/libminuitwrp-arkt.so /system/lib64/libminuitwrp.so");
-+    system("[ -f /system/lib64/libminuitwrp-arkt-1.so ] && mv /system/lib64/libminuitwrp-arkt-1.so /system/lib64/libminuitwrp-arkt.so");
-+
-+	// === ramdisk-files-arkt.so swap ===
-+    system("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
-+    system("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
-+    system("[ -f /ramdisk-files-arkt-1.txt ] && mv /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt");
-+
-+    // === Fix mounts and start MTP again ===
-+       // === Fix mounts and restart MTP ===
-+    LOGINFO("Unmounting and reinitializing...\n");
-+    DataManager::Flush();
-+    system("umount -l /dev/block/platform/soc/1d84000.ufshc/by-name/esp");
-+    system("umount -l /dev/block/platform/soc/1d84000.ufshc/by-name/win");
-+    LOGINFO("Unmounting DONE...\n");
-+   // === Fork + signal recovery to reload ===
-+    pid_t pid = fork();
-+    if (pid == 0) {
-+        ::sleep(1);  
-+		LOGINFO("KILLING TWRP FOR ROTATION...\n");
-+        execlp("killall", "killall", "-SIGUSR1", "recovery", (char*)nullptr);
-+        _exit(0); // child exit
++    // === Check if MSC is already enabled ===
++    if (arg == "pass") {
++        if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
++            gui_changeOverlay("slideout"); // Show overlay immediately
++            gui_print("re-enabling MSC again\n");
++        }
++    } else if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
++        gui_print("Mass storage is already enabled!\n");
++        gui_changeOverlay("msc_enabled");
++        return 1;
 +    }
 +
-+	// android::base::SetProperty("sys.usb.config", "adb");
-+	LOGINFO("KILLING DONE...\n");
-+    // Main function ends here
-+	LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
++    // === Show slideout overlay IMMEDIATELY ===
++    gui_changeOverlay("slideout");
++	sync();
++
++    // === Run the rest asynchronously ===
++    std::thread([] {
++        // Short delay to allow the UI to render overlay
++        std::this_thread::sleep_for(std::chrono::milliseconds(300));
++
++        TWFunc::CommonByArKT();
++
++        gui_print("Enabling Mass Storage...\n");
++
++        std::string bash_script = R"(
++			setenforce 0;
++			echo 0x2717 > /config/usb_gadget/g1/idVendor;
++			echo 0x9039 > /config/usb_gadget/g1/idProduct;
++			echo 0xEF > /config/usb_gadget/g1/bDeviceClass;
++			echo 0x02 > /config/usb_gadget/g1/bDeviceSubClass;
++			echo 0x01 > /config/usb_gadget/g1/bDeviceProtocol;
++			ln -s /config/usb_gadget/g1/functions/mass_storage.0 /config/usb_gadget/g1/configs/b.1/ 2>/dev/null;
++			echo /dev/block/sda > /config/usb_gadget/g1/configs/b.1/mass_storage.0/lun.0/file;
++			echo 0 > /config/usb_gadget/g1/configs/b.1/mass_storage.0/lun.0/removable;
++			echo '' > /config/usb_gadget/g1/UDC 2>/dev/null;
++			echo a600000.dwc3 > /config/usb_gadget/g1/UDC 2>/dev/null;
++		)";
++		
++        TWFunc::Exec_Cmd(("sh -c '" + bash_script + "'").c_str());
++
++        gui_print("Done!\n");
++    }).detach();
++	gui_print("\n");
++	sync();
 +    return 0;
 +}
-diff -ruN /home/arkt/android/twrp/bootable/recovery/gui/objects.hpp /home/arkt/android/arkt-twrp/bootable/recovery/gui/objects.hpp
---- /home/arkt/android/twrp/bootable/recovery/gui/objects.hpp	2025-04-20 00:02:17.532770078 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/gui/objects.hpp	2025-04-18 16:49:41.928179357 +0530
-@@ -334,6 +334,7 @@
++
++int GUIAction::formatwinbyarkt(std::string arg __unused)
++{
++	// === Check if MSC is enabled ===
++	//if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
++		//gui_changeOverlay("msc_enabled_warn");
++		//return 1;
++	//}
++
++	gui_changeOverlay("slideout");
++	TWFunc::FormatWinByArKT();
++	return 0;
++}
++
++int GUIAction::printpartitionsbyarkt(std::string arg __unused) {
++	gui_changeOverlay("slideout");
++	TWFunc::partedprintByArKT();
++	return 0;
++}
++
++int GUIAction::rotationbyarkt(std::string arg __unused)
++{
++	// === Check if MSC is enabled ===
++	//if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
++		// Show your custom GUI page
++		//gui_changeOverlay("msc_enabled");
++		//return 1;
++	//}
++	
++    TWFunc::RotationByArkt();
++    sync();
++    return 0;
++}
++
++int GUIAction::rebootbyarkt(std::string arg)
++{
++    // === Check if MSC is already enabled ===
++    if (arg == "r") {
++		TWFunc::Exec_Cmd("reboot >/dev/null 2>&1 || true");
++    } else if (arg == "rtbl") {
++		TWFunc::Exec_Cmd("reboot bootloader >/dev/null 2>&1 || true");
++    } else if (arg == "rtr") {
++		TWFunc::Exec_Cmd("reboot recovery >/dev/null 2>&1 || true");
++    } else if (arg == "off") {
++		TWFunc::Exec_Cmd("reboot poweroff >/dev/null 2>&1 || true");
++    }
++	return 0;
++}
+\ No newline at end of file
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/objects.hpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/objects.hpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/objects.hpp	2025-04-25 16:37:47.222237358 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/objects.hpp	2025-05-02 15:14:28.275827507 +0530
+@@ -334,6 +334,11 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
 +	int rotationbyarkt(std:: string arg);
++	int mscbyarkt(std:: string arg);
++	int formatwinbyarkt(std:: string arg);
++	int printpartitionsbyarkt(std:: string arg);
++	int rebootbyarkt(std:: string arg);
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
-diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp.cpp /home/arkt/android/arkt-twrp/bootable/recovery/twrp.cpp
---- /home/arkt/android/twrp/bootable/recovery/twrp.cpp	2025-04-20 00:02:17.642769077 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/twrp.cpp	2025-04-19 16:05:43.075587615 +0530
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp.cpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp.cpp	2025-04-26 00:50:10.816828015 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -135,39 +172,24 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp.cpp /home/arkt/android/
  	twrpAdbBuFifo *adb_bu_fifo = new twrpAdbBuFifo();
  	TWFunc::Clear_Bootloader_Message();
  
-@@ -493,6 +495,25 @@
+@@ -491,7 +493,7 @@
+ 	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
+ 	GUIConsole::Translate_Now();
  
- 	TWFunc::checkforapp(); //Checking compatibility for TWRP app
+-	TWFunc::checkforapp(); //Checking compatibility for TWRP app
++	//TWFunc::checkforapp(); //Checking compatibility for TWRP app
  
-+	LOGINFO("Start MTP again by ArKT \n");
-+	TWFunc::Exec_Cmd("mkdir -p /data/media");
-+	PartitionManager.Enable_MTP();
-+
-+
-+	//gui_msg("ARKT gui_msg Standard status message ARKT");
-+	//gui_warn("ARKT gui_warn This is a warning! ARKT");
-+	//gui_err("ARKT gui_err This is an error! ARKT");
-+	//gui_highlight("ARKT gui_highlight Highlighted success message! ARKT");
-+	//E:String resource 'ARKT gui_msg Standard status message ARKT' not found. No default value.
-+	//[ARKT gui_msg Standard status message ARKT]
-+	//E:String resource 'ARKT gui_warn This is a warning! ARKT' not found. No default value.
-+	//[ARKT gui_warn This is a warning! ARKT]
-+	//E:String resource 'ARKT gui_err This is an error! ARKT' not found. No default value.
-+	//[ARKT gui_err This is an error! ARKT]
-+	//E:String resource 'ARKT gui_highlight Highlighted success message! ARKT' not found. No default value.
-+	//[ARKT gui_highlight Highlighted success message! ARKT]
-+
-+
  	// Launch the main GUI
  	gui_start();
- 	delete adb_bu_fifo;
-diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp /home/arkt/android/arkt-twrp/bootable/recovery/twrp-functions.cpp
---- /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp	2025-04-20 00:02:17.642769077 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/twrp-functions.cpp	2025-04-19 01:09:26.530403298 +0530
-@@ -1659,4 +1659,90 @@
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.cpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.cpp	2025-05-03 00:13:45.423899944 +0530
+@@ -1659,4 +1659,304 @@
  	return ret;
  }
  
++// Funtions By ArKT , telegram - @ArKT_7, Github - https://github.com/ArKT-7
++
 +void TWFunc::PartitionSizesByArKT() {
 +	std::string win_raw, esp_raw, userdata_raw;
 +	std::string win_val = "NA", win_unit = "MB", win_display = "NA";
@@ -185,13 +207,13 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp /home/ark
 +	};
 +
 +	// WIN Partition
-+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'win' | awk '{print $4}'", win_raw, true) == 0) {
++	if (Exec_Cmd("blockdev --getsize64 /dev/block/by-name/win | awk '{printf \"%.0fMB\\n\", $1 / 1000 / 1000}'", win_raw, true) == 0) {
 +		if (win_raw.find("MB") != std::string::npos)
 +			win_raw = win_raw.substr(0, win_raw.find("MB"));
 +		if (!win_raw.empty()) {
 +			float win_mb = std::stof(win_raw);
-+			if (win_mb >= 1024.0f) {
-+				win_val = clean_float_str(win_mb / 1024.0f);
++			if (win_mb >= 1000.0f) {
++				win_val = clean_float_str(win_mb / 1000.0f);
 +				win_unit = "GB";
 +			} else {
 +				win_val = win_raw;
@@ -208,13 +230,13 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp /home/ark
 +		LOGINFO("WIN Partition Size: %s\n", win_display.c_str());
 +
 +	// ESP Partition
-+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'esp' | awk '{print $4}'", esp_raw, true) == 0) {
++	if (Exec_Cmd("blockdev --getsize64 /dev/block/by-name/esp | awk '{printf \"%.0fMB\\n\", $1 / 1000 / 1000}'", esp_raw, true) == 0) {
 +		if (esp_raw.find("MB") != std::string::npos)
 +			esp_raw = esp_raw.substr(0, esp_raw.find("MB"));
 +		if (!esp_raw.empty()) {
 +			float esp_mb = std::stof(esp_raw);
-+			if (esp_mb >= 1024.0f) {
-+				esp_val = clean_float_str(esp_mb / 1024.0f);
++			if (esp_mb >= 1000.0f) {
++				esp_val = clean_float_str(esp_mb / 1000.0f);
 +				esp_unit = "GB";
 +			} else {
 +				esp_val = esp_raw;
@@ -231,13 +253,13 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp /home/ark
 +		LOGINFO("ESP Partition Size: %s\n", esp_display.c_str());
 +
 +	// USERDATA Partition
-+	if (TWFunc::Exec_Cmd("parted /dev/block/sda -s unit MB print | grep 'userdata$' | awk '{print $4}'", userdata_raw, true) == 0) {
++	if (Exec_Cmd("blockdev --getsize64 /dev/block/by-name/userdata | awk '{printf \"%.0fMB\\n\", $1 / 1000 / 1000}'", userdata_raw, true) == 0) {
 +		if (userdata_raw.find("MB") != std::string::npos)
 +			userdata_raw = userdata_raw.substr(0, userdata_raw.find("MB"));
 +		if (!userdata_raw.empty()) {
 +			float userdata_mb = std::stof(userdata_raw);
-+			if (userdata_mb >= 1024.0f) {
-+				userdata_val = clean_float_str(userdata_mb / 1024.0f);
++			if (userdata_mb >= 1000.0f) {
++				userdata_val = clean_float_str(userdata_mb / 1000.0f);
 +				userdata_unit = "GB";
 +			} else {
 +				userdata_val = userdata_raw;
@@ -254,21 +276,237 @@ diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.cpp /home/ark
 +		LOGINFO("USERDATA Partition Size: %s\n", userdata_display.c_str());
 +}
 +
++void TWFunc::RotationByArkt() {
++	LOGINFO("TWRP ROTATION BY ARKT...\n");
++
++	//PartitionManager.Disable_MTP();
++
++	chdir("/");
++	umask(022);
++
++    LOGINFO("Backing up current twres...\n");
++    Exec_Cmd("mkdir -p /twres/twres-arkt/backup");
++    Exec_Cmd("mv /twres/ui.xml /twres/twres-arkt/backup/ui.xml");
++    Exec_Cmd("mv /twres/splash.xml /twres/twres-arkt/backup/splash.xml");
++
++    Exec_Cmd("mv /twres/images /twres/twres-arkt/backup/images");
++
++    Exec_Cmd("[ -f /twres/portrait.xml ] && mv /twres/portrait.xml /twres/twres-arkt/backup/portrait.xml");
++    Exec_Cmd("[ -f /twres/landscape.xml ] && mv /twres/landscape.xml /twres/twres-arkt/backup/landscape.xml");
++
++    LOGINFO("Swapping in new layout...\n");
++    Exec_Cmd("mv /twres/twres-arkt/ui.xml /twres/");
++    Exec_Cmd("mv /twres/twres-arkt/splash.xml /twres/");
++
++    Exec_Cmd("mv /twres/twres-arkt/images /twres/");
++
++    Exec_Cmd("[ -f /twres/twres-arkt/portrait.xml ] && mv /twres/twres-arkt/portrait.xml /twres/");
++    Exec_Cmd("[ -f /twres/twres-arkt/landscape.xml ] && mv /twres/twres-arkt/landscape.xml /twres/");
++
++    LOGINFO("Moving previous layout into /twres-arkt...\n");
++    Exec_Cmd("mv /twres/twres-arkt/backup/ui.xml /twres/twres-arkt/ui.xml");
++    Exec_Cmd("mv /twres/twres-arkt/backup/splash.xml /twres/twres-arkt/splash.xml");
++
++    Exec_Cmd("mv /twres/twres-arkt/backup/images /twres/twres-arkt/images");
++
++	Exec_Cmd("mv /twres/twres-arkt/images/splashteamwin.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/enter_terminal.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/win.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width_low.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal_fill.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/splashlogo.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/backspace_terminal.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/space_terminal.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/unlock_icon.png /twres/images/");
++	Exec_Cmd("mv /twres/twres-arkt/images/cursor.png /twres/images/");
++
++    Exec_Cmd("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
++    Exec_Cmd("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
++
++    Exec_Cmd("[ -f /system/lib64/libminuitwrp.so ] && mv /system/lib64/libminuitwrp.so /system/lib64/libminuitwrp-arkt-1.so");
++    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt.so ] && mv /system/lib64/libminuitwrp-arkt.so /system/lib64/libminuitwrp.so");
++    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt-1.so ] && mv /system/lib64/libminuitwrp-arkt-1.so /system/lib64/libminuitwrp-arkt.so");
++
++    Exec_Cmd("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
++    Exec_Cmd("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
++    Exec_Cmd("[ -f /ramdisk-files-arkt-1.txt ] && mv /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt");
++
++    LOGINFO("Unmounting and reinitializing...\n");
++	sync();
++    DataManager::Flush();
++	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
++	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
++    sync();
++
++    pid_t pid = fork();
++    if (pid == 0) {
++        ::sleep(1);  
++		LOGINFO("KILLING TWRP FOR ROTATION...\n");
++        execlp("killall", "killall", "-SIGUSR1", "recovery", (char*)nullptr);
++        _exit(0); // child exit
++    }
++
++	LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
++}
++
++void TWFunc::CommonByArKT() {
++    int mtpActive = system("getprop sys.usb.config | grep -q 'mtp'");
++    if (mtpActive == 0) {
++        gui_print("MTP mode detected. Resetting USB to ADB...\n");
++        PartitionManager.Disable_MTP();
++        android::base::SetProperty("sys.usb.config", "none");
++        android::base::SetProperty("sys.usb.config", "adb");
++        Exec_Cmd("rm -f /config/usb_gadget/g1/configs/b.1/f* || true");
++        ::sleep(2);
++    }
++    
++    gui_print("Unmounting all related partitions...\n");
++
++    Exec_Cmd("for i in sdcard data; do umount -lf /$i 2>/dev/null || true; done");
++    Exec_Cmd("dmsetup remove -f userdata 2>/dev/null || true");
++    Exec_Cmd("for i in esp win firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i > /dev/null 2>&1 || true; done");
++}
++
++void TWFunc::partedprintByArKT() {
++	gui_print("Fetching partition list...\n\n");
++
++	std::thread([] {
++		std::this_thread::sleep_for(std::chrono::milliseconds(100));
++
++		std::string parted_output;
++		int code = Exec_Cmd("parted /dev/block/sda p free", parted_output, true);
++
++		if (code != 0 || parted_output.empty()) {
++			gui_print("Failed to get partition list.\n");
++			gui_print("%s\n", parted_output.c_str());
++			return;
++		}
++
++		std::istringstream stream(parted_output);
++		std::string line;
++		while (std::getline(stream, line)) {
++			gui_print("%s\n", line.c_str());
++			std::this_thread::sleep_for(std::chrono::milliseconds(5));
++		
++		//std::istringstream iss(parted_output);
++		//std::string line;
++		//bool inside_table = false;
++
++		//while (std::getline(iss, line)) {
++
++			//if (line.find("Number") != std::string::npos) {
++				//inside_table = true;
++
++				//gui_print("%-4s %-7s %-7s %-7s %-8s %-8s %-s\n",
++						//"No.", "Start", "End", "Size", "FS", "Name", "Flags");
++				//continue;
++			//}
++
++			//if (!inside_table) {
++				//gui_print("%s\n", line.c_str());
++				//continue;
++			//}
++
++			//std::vector<std::string> columns;
++			//std::regex separator("  +");
++			//std::sregex_token_iterator iter(line.begin(), line.end(), separator, -1);
++			//std::sregex_token_iterator end;
++
++			//while (iter != end) {
++				//columns.push_back(*iter++);
++			//}
++
++			//gui_print("%-5s %-5s %-6s %-5s %-8s %-8s %-s\n",
++					//columns.size() > 0 ? columns[0].c_str() : "",
++					//columns.size() > 1 ? columns[1].c_str() : "",
++					//columns.size() > 2 ? columns[2].c_str() : "",
++					//columns.size() > 3 ? columns[3].c_str() : "",
++					//columns.size() > 4 ? columns[4].c_str() : "",
++					//columns.size() > 5 ? columns[5].c_str() : "",
++					//columns.size() > 6 ? columns[6].c_str() : "");
++		}
++    }).detach();
++
++	gui_print("\n");
++}
++
++void TWFunc::FormatWinByArKT() {
++	
++    gui_print("Formatting WIN and ESP partitions...\n");
++
++    std::thread([] {
++        std::this_thread::sleep_for(std::chrono::milliseconds(300));
++
++		std::string win_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/win";
++        std::string esp_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/esp";
++
++        if (!TWFunc::Path_Exists(win_part) || !TWFunc::Path_Exists(esp_part)) {
++            gui_print("Nothing to format. Check your partitions if it has Windows & ESP Partitions.\n");
++            return;
++        }
++
++        sync();
++
++        // Quietly unmount to avoid any mounted processes holding the partition
++        Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
++        Exec_Cmd("umount -lf " + esp_part + " >/dev/null 2>&1 || true");
++
++        // Sleep to ensure the system has detached from the partition before proceeding
++        std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Adjust if necessary
++
++		// 2. Wipe beginning of both partitions
++		Exec_Cmd("dd if=/dev/zero of=" + win_part + " bs=512 count=1 >/dev/null 2>&1 || true");
++		Exec_Cmd("dd if=/dev/zero of=" + esp_part + " bs=512 count=1 >/dev/null 2>&1 || true");
++
++        sync();
++
++        // Optionally run ntfsfix on the win partition before formatting to clean up
++        Exec_Cmd("ntfsfix " + win_part + " >/dev/null 2>&1 || true");
++
++        std::string esp_out;
++        int esp_code = Exec_Cmd("mkfs.fat -F32 -s1 " + esp_part + " -n ESPNABU", esp_out, true);
++        gui_print("\n%s", esp_out.c_str());
++        
++		std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Adjust if necessary
++
++        std::string win_out;
++        int win_code = Exec_Cmd("mkfs.ntfs -f " + win_part + " -L WINNABU", win_out, true);
++        gui_print("%s\n", win_out.c_str());
++        
++		std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Adjust if necessary
++  
++        sync();
++
++        if (esp_code == 0 && win_code == 0)
++            gui_print("Both WIN and ESP formatted successfully!\n");
++        else
++            gui_print("Formatting failed for one or both partitions. Check above.\n");
++
++        sync();
++    }).detach();
++}
++
  #endif // ndef BUILD_TWRPTAR_MAIN
-diff -ruN /home/arkt/android/twrp/bootable/recovery/twrp-functions.hpp /home/arkt/android/arkt-twrp/bootable/recovery/twrp-functions.hpp
---- /home/arkt/android/twrp/bootable/recovery/twrp-functions.hpp	2025-04-20 00:02:17.642769077 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/twrp-functions.hpp	2025-04-18 17:20:26.707219302 +0530
-@@ -75,6 +75,7 @@
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.hpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.hpp
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.hpp	2025-04-25 16:37:47.062235852 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.hpp	2025-04-26 01:04:16.512213610 +0530
+@@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
  	static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
-+    static void PartitionSizesByArKT(); 
++	static void PartitionSizesByArKT(); 
++	static void CommonByArKT();
++	static void RotationByArkt();
++	static void partedprintByArKT();
++	static void FormatWinByArKT();
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
-diff -ruN /home/arkt/android/twrp/bootable/recovery/variables.h /home/arkt/android/arkt-twrp/bootable/recovery/variables.h
---- /home/arkt/android/twrp/bootable/recovery/variables.h	2025-04-20 00:02:17.646102381 +0530
-+++ /home/arkt/android/arkt-twrp/bootable/recovery/variables.h	2025-04-18 16:45:49.552669198 +0530
+diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/variables.h /home/arkt/android/latest-twrp-arkt/bootable/recovery/variables.h
+--- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/variables.h	2025-04-25 16:37:47.065569217 +0530
++++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/variables.h	2025-04-26 00:43:26.005762313 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
