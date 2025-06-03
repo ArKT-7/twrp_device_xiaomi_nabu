@@ -1,6 +1,6 @@
-diff -ruN /home/arkt/android/back-twrp-arkt-new/build/make/core/Makefile /home/arkt/android/latest-twrp-arkt/build/make/core/Makefile
---- /home/arkt/android/back-twrp-arkt-new/build/make/core/Makefile	2025-04-25 16:37:55.582315882 +0530
-+++ /home/arkt/android/latest-twrp-arkt/build/make/core/Makefile	2025-04-26 00:43:20.275769489 +0530
+diff -ruN /build/make/core/Makefile /build/make/core/Makefile
+--- /build/make/core/Makefile	2025-04-25 16:37:55.582315882 +0530
++++ /build/make/core/Makefile	2025-04-26 00:43:20.275769489 +0530
 @@ -2265,7 +2265,7 @@
  	  cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.wipe)
  	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
