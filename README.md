@@ -30,20 +30,13 @@ mkdir -p ~/android/twrp && cd ~/android/twrp
 ```
 
 #### **Important Note:**
-##### The build process may take some time and approximately **30GB** of space will be required on the device.
+##### The build process may take some time and approximately **60GB** of space will be required on the device.
 
 #### ✅ **Step 1: Configure Git Identity**
 
 ```bash
 git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
-```
-
-##### For example:
-
-```bash
-git config --global user.name "arkt"
-git config --global user.email "arkt@archlinux.local"
 ```
 
 ##### Next, initialize the repo:
@@ -55,16 +48,23 @@ repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aos
 #### Then sync the repo:
 
 ```bash
-repo sync -c --no-clone-bundle --no-tags -j4
+repo sync
 ```
 
-#### 📦 **Clone Your Device Tree for Nabu**
+#### 📦 **Step 2: Clone Your Modded Device Tree for Nabu**
 
-##### Now, clone the TWRP device tree for the Xiaomi Pad 5 (Nabu) from the appropriate repository:
+##### Now, clone the TWRP mod device tree for the Xiaomi Pad 5 (Nabu) and kernel:
 
 ```bash
-git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git device/xiaomi/nabu
-git clone https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git kernel/xiaomi/nabu
+git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod device/xiaomi/nabu
+git clone https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git -b 14.0 kernel/xiaomi/nabu
+```
+
+#### 🧩 **Step 3: Patch sources for Mod twrp**
+
+```bash
+patch -p1 < device/xiaomi/nabu/.arkt-changes/bootable-recovery.patch
+patch -p1 < device/xiaomi/nabu/.arkt-changes/build-make.patch
 ```
 
 #### 🚀 **Start Building**
@@ -86,7 +86,7 @@ out/target/product/nabu/boot.img
 
 ---
 
-##### That's it! You've now set up a working TWRP build specifically for the **Xiaomi Pad 5 (Nabu)**.
+##### That's it! You've now set up a working Modded TWRP build specifically for the **Xiaomi Pad 5 (Nabu)**.
 
 ---
 
