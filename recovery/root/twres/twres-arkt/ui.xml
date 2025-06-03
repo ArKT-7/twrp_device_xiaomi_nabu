@@ -17,7 +17,7 @@
 		<font name="font_l" filename="RobotoCondensed-Regular.ttf" size="42"/>
 		<font name="font_m" filename="RobotoCondensed-Regular.ttf" size="32"/>
 		<font name="font_s" filename="RobotoCondensed-Regular.ttf" size="28"/>
-		<font name="fixed" filename="DroidSansMono.ttf" size="28"/>
+		<font name="fixed" filename="RobotoCondensed-Regular.ttf" size="28"/>
 		<font name="term" filename="DroidSansMono-term.ttf" size="30"/>
 
 		<font name="keylabel" filename="RobotoCondensed-Regular.ttf" size="50"/>
