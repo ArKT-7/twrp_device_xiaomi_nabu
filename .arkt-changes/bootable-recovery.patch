@@ -1,6 +1,6 @@
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/data.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/data.cpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/data.cpp	2025-04-25 16:37:47.055569123 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/data.cpp	2025-04-26 00:43:30.909089305 +0530
+diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
+--- /bootable/recovery/data.cpp	2025-04-25 16:37:47.055569123 +0530
++++ /bootable/recovery/data.cpp	2025-04-26 00:43:30.909089305 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -10,10 +10,10 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/data.cpp /home
  	mPersist.SetValue("tw_no_screen_timeout", "0");
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
-Binary files /home/arkt/android/back-twrp-arkt-new/bootable/recovery/.git/index and /home/arkt/android/latest-twrp-arkt/bootable/recovery/.git/index differ
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/action.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/action.cpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/action.cpp	2025-04-25 16:37:47.222237358 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/action.cpp	2025-05-02 16:55:41.379115865 +0530
+Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
+diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
+--- /bootable/recovery/gui/action.cpp	2025-04-25 16:37:47.222237358 +0530
++++ /bootable/recovery/gui/action.cpp	2025-05-02 16:55:41.379115865 +0530
 @@ -209,6 +209,11 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -145,9 +145,9 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/action.cpp
 +	return 0;
 +}
 \ No newline at end of file
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/objects.hpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/objects.hpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/objects.hpp	2025-04-25 16:37:47.222237358 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/gui/objects.hpp	2025-05-02 15:14:28.275827507 +0530
+diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
+--- /bootable/recovery/gui/objects.hpp	2025-04-25 16:37:47.222237358 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-05-02 15:14:28.275827507 +0530
 @@ -334,6 +334,11 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -160,9 +160,9 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/gui/objects.hp
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp.cpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp.cpp	2025-04-25 16:37:47.062235852 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp.cpp	2025-04-26 00:50:10.816828015 +0530
+diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
+--- /bootable/recovery/twrp.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp.cpp	2025-04-26 00:50:10.816828015 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -181,9 +181,9 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp.cpp /home
  
  	// Launch the main GUI
  	gui_start();
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.cpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.cpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.cpp	2025-04-25 16:37:47.062235852 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.cpp	2025-05-03 00:13:45.423899944 +0530
+diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
+--- /bootable/recovery/twrp-functions.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-05-03 00:13:45.423899944 +0530
 @@ -1659,4 +1659,304 @@
  	return ret;
  }
@@ -489,9 +489,9 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions
 +}
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.hpp /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.hpp
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions.hpp	2025-04-25 16:37:47.062235852 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/twrp-functions.hpp	2025-04-26 01:04:16.512213610 +0530
+diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
+--- /bootable/recovery/twrp-functions.hpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-04-26 01:04:16.512213610 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -504,9 +504,9 @@ diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/twrp-functions
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
-diff -ruN /home/arkt/android/back-twrp-arkt-new/bootable/recovery/variables.h /home/arkt/android/latest-twrp-arkt/bootable/recovery/variables.h
---- /home/arkt/android/back-twrp-arkt-new/bootable/recovery/variables.h	2025-04-25 16:37:47.065569217 +0530
-+++ /home/arkt/android/latest-twrp-arkt/bootable/recovery/variables.h	2025-04-26 00:43:26.005762313 +0530
+diff -ruN /bootable/recovery/variables.h /bootable/recovery/variables.h
+--- /bootable/recovery/variables.h	2025-04-25 16:37:47.065569217 +0530
++++ /bootable/recovery/variables.h	2025-04-26 00:43:26.005762313 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
