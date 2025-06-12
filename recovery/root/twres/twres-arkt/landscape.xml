@@ -6648,7 +6648,6 @@ edi				<conditions>
 				<text>Twrp will rotate to Portrait mode</text>
 			</text>
 
-
 			<button style="button_third_width">
 				<placement x="1010" y="%row12_y%"/>
 				<text>{@ok_btn=OK}</text>
