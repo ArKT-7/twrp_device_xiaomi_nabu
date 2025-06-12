@@ -1,6 +1,6 @@
 diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-06-03 15:35:09.874046726 +0530
-+++ /bootable/recovery/data.cpp	2025-06-03 16:18:30.285254069 +0530
+--- /bootable/recovery/data.cpp	2025-04-25 16:37:47.055569123 +0530
++++ /bootable/recovery/data.cpp	2025-04-26 00:43:30.909089305 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,9 +12,9 @@ diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
  #ifdef BOARD_BOOT_HEADER_VERSION
 Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
 diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-06-03 15:35:09.914046208 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-06-12 13:24:38.161192410 +0530
-@@ -209,6 +209,12 @@
+--- /bootable/recovery/gui/action.cpp	2025-04-25 16:37:47.222237358 +0530
++++ /bootable/recovery/gui/action.cpp	2025-05-02 16:55:41.379115865 +0530
+@@ -209,6 +209,11 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
@@ -23,11 +23,10 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +		ADD_ACTION(formatwinbyarkt);
 +		ADD_ACTION(printpartitionsbyarkt);
 +		ADD_ACTION(rebootbyarkt);
-+		ADD_ACTION(restorebyarkt);
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -593,6 +599,7 @@
+@@ -593,6 +598,7 @@
  	// to prevent crashing which could occur when we start deleting
  	// GUI resources in the action thread while we attempt to render
  	// with those same resources in another thread.
@@ -35,7 +34,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
  	return 0;
  }
  
-@@ -668,6 +675,7 @@
+@@ -668,6 +674,7 @@
  		PartitionManager.Mount_Current_Storage(true);
  	}
  	operation_end(0);
@@ -43,7 +42,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
  	return 0;
  }
  
-@@ -2365,3 +2373,146 @@
+@@ -2365,3 +2372,101 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -57,14 +56,14 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +            gui_print("re-enabling MSC again\n");
 +        }
 +    } else if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+        gui_print("\nMass storage is already enabled!\n");
++        gui_print("Mass storage is already enabled!\n");
 +        gui_changeOverlay("msc_enabled");
 +        return 1;
 +    }
 +
 +    // === Show slideout overlay IMMEDIATELY ===
 +    gui_changeOverlay("slideout");
-+	TWFunc::Exec_Cmd("sync");
++	sync();
 +
 +    // === Run the rest asynchronously ===
 +    std::thread([] {
@@ -91,8 +90,9 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +		
 +        TWFunc::Exec_Cmd(("sh -c '" + bash_script + "'").c_str());
 +
-+        gui_print("\nDone!\n");
++        gui_print("Done!\n");
 +    }).detach();
++	gui_print("\n");
 +	sync();
 +    return 0;
 +}
@@ -106,7 +106,6 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +	//}
 +
 +	gui_changeOverlay("slideout");
-+	sync();
 +	TWFunc::FormatWinByArKT();
 +	return 0;
 +}
@@ -125,7 +124,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +		//gui_changeOverlay("msc_enabled");
 +		//return 1;
 +	//}
-+	gui_changeOverlay("rotation_warn");
++	
 +    TWFunc::RotationByArkt();
 +    sync();
 +    return 0;
@@ -133,6 +132,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +
 +int GUIAction::rebootbyarkt(std::string arg)
 +{
++    // === Check if MSC is already enabled ===
 +    if (arg == "r") {
 +		TWFunc::Exec_Cmd("reboot >/dev/null 2>&1 || true");
 +    } else if (arg == "rtbl") {
@@ -144,56 +144,11 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    }
 +	return 0;
 +}
-+
-+int GUIAction::restorebyarkt(std::string arg __unused)
-+{
-+    if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+        gui_print("\nMass storage is already enabled!\n");
-+        gui_changeOverlay("msc_enabled_warn");
-+        return 1;
-+    }
-+
-+    if (arg != "pass") {
-+        gui_changeOverlay("restore_warn");
-+        return 0;
-+    }
-+
-+    gui_changeOverlay("slideout");
-+    sync();
-+
-+	std::thread([] {
-+		std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+
-+		TWFunc::CommonByArKT();
-+		gui_print("Restoring partitions to stock...\n\n");
-+
-+        //std::string output1, output2, output3, output4, output5;
-+		//int ret1, ret2, ret3, ret4, ret5;
-+
-+		//ret1 = TWFunc::Exec_Cmd("for i in $(seq 31 40); do parted -s /dev/block/sda rm $i 2>/dev/null || true; done", output1, true);
-+		//gui_print("Removing partitions...\n");
-+		//gui_print("\n%s\n", output1.c_str());
-+
-+		TWFunc::Exec_Cmd("for i in $(seq 31 40); do parted -s /dev/block/sda rm $i 2>/dev/null || true; done");
-+		gui_print("Removing partitions...\n");
-+		TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart userdata ext4 10872MB 100%");
-+		gui_print("Creating userdata(Android) partition...\n");
-+		TWFunc::Exec_Cmd("sgdisk --resize-table 32 /dev/block/sda");
-+		gui_print("Resizing partition table...\n");
-+		TWFunc::Exec_Cmd("sync");
-+		TWFunc::Exec_Cmd("make_f2fs -f -g android /dev/block/sda31");
-+		gui_print("Formatting userdata...\n");
-+		TWFunc::Exec_Cmd("mke2fs -t ext4 -F /dev/block/sda19");
-+		gui_print("Formatting metadata...\n");
-+		TWFunc::partedprintByArKT();
-+	}).detach();
-+    sync();
-+    return 0;
-+}
+\ No newline at end of file
 diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-06-03 15:35:09.917379497 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-06-12 01:38:58.633317936 +0530
-@@ -334,6 +334,12 @@
+--- /bootable/recovery/gui/objects.hpp	2025-04-25 16:37:47.222237358 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-05-02 15:14:28.275827507 +0530
+@@ -334,6 +334,11 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
@@ -202,13 +157,12 @@ diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 +	int formatwinbyarkt(std:: string arg);
 +	int printpartitionsbyarkt(std:: string arg);
 +	int rebootbyarkt(std:: string arg);
-+	int restorebyarkt(std:: string arg);
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
 diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp.cpp	2025-06-03 16:18:30.288587389 +0530
+--- /bootable/recovery/twrp.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp.cpp	2025-04-26 00:50:10.816828015 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -228,9 +182,9 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  	// Launch the main GUI
  	gui_start();
 diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-12 13:20:34.697076690 +0530
-@@ -1659,4 +1659,305 @@
+--- /bootable/recovery/twrp-functions.cpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-05-03 00:13:45.423899944 +0530
+@@ -1659,4 +1659,304 @@
  	return ret;
  }
  
@@ -384,7 +338,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +    DataManager::Flush();
 +	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
 +	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
-+    Exec_Cmd("sync");
++    sync();
 +
 +    pid_t pid = fork();
 +    if (pid == 0) {
@@ -400,7 +354,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +void TWFunc::CommonByArKT() {
 +    int mtpActive = system("getprop sys.usb.config | grep -q 'mtp'");
 +    if (mtpActive == 0) {
-+        gui_print("\nMTP mode detected. Resetting USB to ADB...\n");
++        gui_print("MTP mode detected. Resetting USB to ADB...\n");
 +        PartitionManager.Disable_MTP();
 +        android::base::SetProperty("sys.usb.config", "none");
 +        android::base::SetProperty("sys.usb.config", "adb");
@@ -408,7 +362,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +        ::sleep(2);
 +    }
 +    
-+    gui_print("\nUnmounting all related partitions...\n");
++    gui_print("Unmounting all related partitions...\n");
 +
 +    Exec_Cmd("for i in sdcard data; do umount -lf /$i 2>/dev/null || true; done");
 +    Exec_Cmd("dmsetup remove -f userdata 2>/dev/null || true");
@@ -416,7 +370,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +}
 +
 +void TWFunc::partedprintByArKT() {
-+	gui_print("\nFetching partition list...\n\n");
++	gui_print("Fetching partition list...\n\n");
 +
 +	std::thread([] {
 +		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -473,7 +427,6 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +					//columns.size() > 5 ? columns[5].c_str() : "",
 +					//columns.size() > 6 ? columns[6].c_str() : "");
 +		}
-+		gui_print("\nDone!\n");
 +    }).detach();
 +
 +	gui_print("\n");
@@ -481,7 +434,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +
 +void TWFunc::FormatWinByArKT() {
 +	
-+    gui_print("\nFormatting WIN and ESP partitions...\n");
++    gui_print("Formatting WIN and ESP partitions...\n");
 +
 +    std::thread([] {
 +        std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -494,7 +447,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +            return;
 +        }
 +
-+        Exec_Cmd("sync");
++        sync();
 +
 +        // Quietly unmount to avoid any mounted processes holding the partition
 +        Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
@@ -507,7 +460,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +		Exec_Cmd("dd if=/dev/zero of=" + win_part + " bs=512 count=1 >/dev/null 2>&1 || true");
 +		Exec_Cmd("dd if=/dev/zero of=" + esp_part + " bs=512 count=1 >/dev/null 2>&1 || true");
 +
-+        Exec_Cmd("sync");
++        sync();
 +
 +        // Optionally run ntfsfix on the win partition before formatting to clean up
 +        Exec_Cmd("ntfsfix " + win_part + " >/dev/null 2>&1 || true");
@@ -524,7 +477,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +        
 +		std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Adjust if necessary
 +  
-+        Exec_Cmd("sync");
++        sync();
 +
 +        if (esp_code == 0 && win_code == 0)
 +            gui_print("Both WIN and ESP formatted successfully!\n");
@@ -537,8 +490,8 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-06-03 16:18:30.288587389 +0530
+--- /bootable/recovery/twrp-functions.hpp	2025-04-25 16:37:47.062235852 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-04-26 01:04:16.512213610 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -552,8 +505,8 @@ diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-function
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN /bootable/recovery/variables.h /bootable/recovery/variables.h
---- /bootable/recovery/variables.h	2025-06-03 15:35:09.884046597 +0530
-+++ /bootable/recovery/variables.h	2025-06-03 16:18:30.288587389 +0530
+--- /bootable/recovery/variables.h	2025-04-25 16:37:47.065569217 +0530
++++ /bootable/recovery/variables.h	2025-04-26 00:43:26.005762313 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
