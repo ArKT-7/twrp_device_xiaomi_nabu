@@ -4015,7 +4015,6 @@
 				<listitem name="Windows Tools page">
 				<action function="page">wintools</action>
 				</listitem>
-				</listitem>
 				<listitem name="Rotate Screen to Landscape">
 				<action function="rotationbyarkt"/>
 				</listitem>
