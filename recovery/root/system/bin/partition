@@ -1,38 +1,61 @@
 #!/sbin/bash
 . common
 
-size=$(echo "${1-}" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sed 's/gb$//;s/[^0-9.]//g')
-winmax=$(echo "($max-11222-8000)/1000" | bc)
-winend=$([[ -z ${1-} ]] && echo "($max+11222)/2" | bc || {
-  if ! [[ $size =~ ^[0-9]+(\.[0-9]+)?$ ]] || (( $(echo "$size<=30 || $size>=$winmax" | bc) )); then
-    echo "Invalid size! Min:30GB, Max:<${winmax}GB" >&2; exit 1
-  fi
-  echo "$size*1000+11222"
-} | bc)
-winend=$(printf "%.0f" "$winend")
-winend=$(( (winend + 1023) / 1024 * 1024 ))  # Force 1MB alignment
-echo "Windows: $(echo "scale=2;($winend-11222)/1024" | bc)GiB"
-echo "Userdata: $(echo "scale=2;($max-$winend)/1024" | bc)GiB"
-echo -n "does this sound good (y/n)? "
-until read -p "Continue (y/n)? " yn && [[ $yn =~ ^([Yy]($|[Ee][Ss]?)|[Nn]($|[Oo]?))$ ]]; do
-  echo "Please answer y/n/yes/no"
-done
-[[ $yn =~ ^[Yy] ]] || { echo "Operation cancelled"; exit 1; }
+RESERVED_START=11222
+RESERVED_END=7000
 
+usable_mb=$((max - RESERVED_START - RESERVED_END))
+winmax=$((usable_mb / 1000))
+input="${1-}"
+size=$(echo "$input" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sed 's/gb$//;s/[^0-9.]//g')
+if [[ -z "$input" ]]; then
+    winend=$(((max + RESERVED_START) / 2))
+else
+    if ! [[ "$size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "Invalid input. Please enter a number (e.g., 60GB)" >&2
+        exit 1
+    fi
+    size_int=$(echo "$size" | cut -d'.' -f1)
+    if (( size_int < 30 || size_int > winmax )); then
+        echo "Invalid size! Min: 30GB, Max: ${winmax}GB" >&2
+        exit 1
+    fi
+    winend=$(echo "$size * 1000" | bc)
+    winend=$(printf "%.0f" "$winend")
+    winend=$(( (winend + 1023) / 1024 * 1024 ))
+    winend=$((winend + RESERVED_START))
+fi
+windows_gb=$(echo "scale=2; ($winend - $RESERVED_START) / 1000" | bc)
+userdata_gb=$(echo "scale=2; ($max - $winend) / 1000" | bc)
+echo ""
+echo "Windows Partition: $windows_gb GB"
+echo "Android Partition: $userdata_gb GB"
+while true; do
+  echo ""
+  echo -n "Does this look good? (y/n): "
+  read yn
+  case "$yn" in
+    [Yy]* ) break ;;
+    [Nn]* ) echo "Operation cancelled"; exit 1 ;;
+    * ) echo "Please enter (yes/y/Y or no/n/N)." ;;
+  esac
+done
+echo ""
+echo "Proceeding with Windows partitioning..."
+echo ""
 disk=/dev/block/sda
 removeparts
-sgdisk --resize-table 64 $disk
-parted -s $disk \
+sgdisk --resize-table 64 "$disk"
+parted -s "$disk" \
   mkpart esp fat32 10872MB 11222MB \
   mkpart win ntfs 11222MB "${winend}MB" \
   mkpart userdata ext4 "${winend}MB" 100% \
   set 31 esp on
 
-sync 
+sync
 formatwindata
 formatwinesp
 fixgpt
 sync
-parted $disk p free
-
+parted "$disk" p free
 echo "done!"
