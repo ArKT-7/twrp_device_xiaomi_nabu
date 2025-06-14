@@ -300,7 +300,7 @@
 			<text color="%text_color%">
 				<font resource="font_m"/>
 				<placement x="%indent%" y="%row1_header_y%"/>
-				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C}    ESP: %tw_esppart_display%    WIN: %tw_winpart_display%    DATA: %tw_userdatapart_display%    %tw_time%</text>
+				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C}    ESP: %arkt_esppart_display%    WIN: %arkt_winpart_display%    DATA: %arkt_userdatapart_display%    %tw_time%</text>
 			</text>
 
 			<text color="%text_color%">
