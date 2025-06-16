@@ -6073,7 +6073,7 @@
 			<text>
 				<font resource="font_m" color="#FFC107"/>
 				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
-				<text>Minimum: 30GB | Maximum: %arkt_blockpart_display% GB</text>
+				<text>Minimum: 25 GB | Maximum: %arkt_blockpart_display% GB</text>
 			</text>
 
 			<text style="text_m">
@@ -6170,7 +6170,7 @@
 			<text>
 				<font resource="keylabel-small" color="#FF9800"/>
 				<placement x="%center_x%" y="%row12_y%" placement="5"/>
-				<text>Enter, Minimum: 30 GB | Maximum: %arkt_blockpart_display% GB</text>
+				<text>Enter, Minimum: 25 GB | Maximum: %arkt_blockpart_display% GB</text>
 			</text>
 
 			<button style="button_third_width">

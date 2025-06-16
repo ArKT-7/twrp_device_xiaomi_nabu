@@ -13,7 +13,7 @@ diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
 diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-06-03 15:35:09.914046208 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-06-15 00:01:47.862307001 +0530
++++ /bootable/recovery/gui/action.cpp	2025-06-17 01:24:07.671859701 +0530
 @@ -209,6 +209,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -239,7 +239,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    double win_gb = std::stod(value);
 +
 +    // Validate partition size input is within allowed range
-+    if (win_gb < 30.0 || win_gb > win_max) {
++    if (win_gb < 25.0 || win_gb > win_max) {
 +        gui_changeOverlay("partition_warn");
 +        return 1;
 +    }
@@ -375,8 +375,8 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  	gui_start();
 diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-14 18:37:58.056598661 +0530
-@@ -1659,4 +1659,283 @@
++++ /bootable/recovery/twrp-functions.cpp	2025-06-17 00:45:06.593264821 +0530
+@@ -1659,4 +1659,284 @@
  	return ret;
  }
  
@@ -428,7 +428,8 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +    auto ParsePartitionSize = [&](const std::string& part_name, std::string& out_raw,
 +                                  std::string& out_val, std::string& out_unit, std::string& out_display,
 +                                  const std::string& arkt_key) {
-+        std::string cmd = "parted /dev/block/sda unit MB print | awk 'tolower($0) ~ /" + part_name + "/ { gsub(\"MB\", \"\", $4); print $4 }'";
++        std::string cmd = "parted /dev/block/sda unit MB print | tr -s ' ' | ""awk '$5 == \"" + part_name + "\" { gsub(\"MB\", \"\", $4); print $4 }'";
++
 +        
 +        if (Exec_Cmd(cmd, out_raw, true) == 0) {
 +            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), '\n'), out_raw.end());
