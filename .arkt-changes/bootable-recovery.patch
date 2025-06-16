@@ -375,8 +375,8 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  	gui_start();
 diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-17 00:45:06.593264821 +0530
-@@ -1659,4 +1659,284 @@
++++ /bootable/recovery/twrp-functions.cpp	2025-06-17 03:17:18.583278961 +0530
+@@ -1659,4 +1659,285 @@
  	return ret;
  }
  
@@ -428,8 +428,9 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +    auto ParsePartitionSize = [&](const std::string& part_name, std::string& out_raw,
 +                                  std::string& out_val, std::string& out_unit, std::string& out_display,
 +                                  const std::string& arkt_key) {
-+        std::string cmd = "parted /dev/block/sda unit MB print | tr -s ' ' | ""awk '$5 == \"" + part_name + "\" { gsub(\"MB\", \"\", $4); print $4 }'";
-+
++        std::string cmd = "parted /dev/block/sda unit MB print | awk -v name=\"" + part_name + "\" "
++                  "'$0 ~ /^[ 0-9]+/ { name_col=0; for(i=1;i<=NF;i++) if($i==name) name_col=i; "
++                  "if(name_col > 0 && $(name_col)==name) { gsub(\"MB\", \"\", $4); print $4 } }'";
 +        
 +        if (Exec_Cmd(cmd, out_raw, true) == 0) {
 +            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), '\n'), out_raw.end());
