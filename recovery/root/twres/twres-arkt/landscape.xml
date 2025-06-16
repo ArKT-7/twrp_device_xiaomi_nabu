@@ -3892,7 +3892,7 @@
 				<listitem name="Windows Tools page">
 				<action function="page">wintools</action>
 				</listitem>
-				<listitem name="Rotate Screen to Landscape">
+				<listitem name="Rotate Screen to Portrait">
 				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
