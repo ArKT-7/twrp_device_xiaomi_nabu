@@ -74,10 +74,10 @@ if [ "$ignoreweirdness" != true ]; then
     if [ -n "$weirdparts" ]; then
         echo -n "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST. Continue (y/n)? "
         read yn
-        [[ $yn =~ ^[Yy].*$ ]] || {
-            echo "Can't proceed without restoring the table."
-            exit 1
-        }
+        case "$yn" in
+            [Yy]*) ;;
+            *) echo "Can't proceed without restoring the table."; exit 1 ;;
+        esac
         echo "Restoring the stock partition layout now..."
         restore
         exit 0
