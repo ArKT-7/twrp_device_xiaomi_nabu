@@ -97,6 +97,8 @@ jobs:
         neofetch
         patch -p1 < "$DEVICE_PATH/.arkt-changes/bootable-recovery.patch"
         patch -p1 < "$DEVICE_PATH/.arkt-changes/build-make.patch"
+        rm -f ./bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf
+        rm -f ./bootable/recovery/gui/theme/extra-languages/languages/lk.xml
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         lunch "${MAKEFILE_NAME}-eng"
