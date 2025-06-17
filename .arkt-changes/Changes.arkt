@@ -256,55 +256,84 @@ void TWFunc::partedprintByArKT()
 }
 
 
-void TWFunc::FormatWinByArKT() 
+void TWFunc::FormatByArKT() 
 {
-    gui_print("\nFormatting WIN and ESP partitions...\n");
+    // Check which partitions are selected to format
+    bool format_win = DataManager::GetIntValue("arkt_format_win") == 1;
+    bool format_esp = DataManager::GetIntValue("arkt_format_esp") == 1;
+
+    // Exit early if nothing is selected
+    if (!format_win && !format_esp) {
+        gui_print("Nothing selected to format.\n");
+        return;
+    }
+
+    // Print appropriate start message
+	if (format_win && format_esp) {
+		gui_print("\nFormatting WIN and ESP partitions...\n");
+	} else if (format_win) {
+		gui_print("\nFormatting only WIN partition...");
+		gui_print(" ");
+	} else if (format_esp) {
+		gui_print("\nFormatting only ESP partition...");
+	}
 
     // Format WIN and ESP partitions asynchronously
-    std::thread([] {
+    std::thread([format_win, format_esp] {
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        std::string win_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/win";
-        std::string esp_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/esp";
+        const std::string win_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/win";
+        const std::string esp_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/esp";
 
-        if (!TWFunc::Path_Exists(win_part) || !TWFunc::Path_Exists(esp_part)) {
+        // Check if selected partitions actually exist
+        if ((format_win && !TWFunc::Path_Exists(win_part)) ||
+            (format_esp && !TWFunc::Path_Exists(esp_part))) {
             gui_print("Nothing to format. Check your partitions if it has Windows & ESP Partitions.\n");
             return;
         }
 
         Exec_Cmd("sync");
-        Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
-        Exec_Cmd("umount -lf " + esp_part + " >/dev/null 2>&1 || true");
+        if (format_win)
+            Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
+        if (format_esp)
+            Exec_Cmd("umount -lf " + esp_part + " >/dev/null 2>&1 || true");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         // Clear first sector to erase old data
-        Exec_Cmd("dd if=/dev/zero of=" + win_part + " bs=512 count=1 >/dev/null 2>&1 || true");
-        Exec_Cmd("dd if=/dev/zero of=" + esp_part + " bs=512 count=1 >/dev/null 2>&1 || true");
+        if (format_win)
+            Exec_Cmd("dd if=/dev/zero of=" + win_part + " bs=512 count=1 >/dev/null 2>&1 || true");
+        if (format_esp)
+            Exec_Cmd("dd if=/dev/zero of=" + esp_part + " bs=512 count=1 >/dev/null 2>&1 || true");
+
         Exec_Cmd("sync");
 
-        // Attempt quick fix on NTFS partition
-        Exec_Cmd("ntfsfix " + win_part + " >/dev/null 2>&1 || true");
+        // Attempt quick fix on the NTFS partition before reformatting
+        if (format_win)
+            Exec_Cmd("ntfsfix " + win_part + " >/dev/null 2>&1 || true");
+
+        std::string esp_out, win_out;
+        int esp_code = 0, win_code = 0;
 
         // Format ESP partition as FAT32
-        std::string esp_out;
-        int esp_code = Exec_Cmd("mkfs.fat -F32 -s1 " + esp_part + " -n ESPNABU", esp_out, true);
-        gui_print("\n%s", esp_out.c_str());
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (format_esp) {
+            esp_code = Exec_Cmd("mkfs.fat -F32 -s1 " + esp_part + " -n ESPNABU", esp_out, true);
+            gui_print("\n%s\n", esp_out.c_str());
+        }
 
         // Format WIN partition as NTFS
-        std::string win_out;
-        int win_code = Exec_Cmd("mkfs.ntfs -f " + win_part + " -L WINNABU", win_out, true);
-        gui_print("%s\n", win_out.c_str());
+        if (format_win) {
+            win_code = Exec_Cmd("mkfs.ntfs -f " + win_part + " -L WINNABU", win_out, true);
+            gui_print("%s\n", win_out.c_str());
+        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         Exec_Cmd("sync");
 
-        if (esp_code == 0 && win_code == 0)
-            gui_print("Both WIN and ESP formatted successfully!\n");
-        else
+        if ((format_win && win_code != 0) || (format_esp && esp_code != 0))
             gui_print("Formatting failed for one or both partitions. Check above.\n");
+        else
+            gui_print("formatted successfully!\n");
 
         sync();
     }).detach();
@@ -324,7 +353,7 @@ twrp/bootable/recovery/twrp-functions.hpp
 	static void CommonByArKT();
 	static void RotationByArkt();
 	static void partedprintByArKT();
-	static void FormatWinByArKT();
+	static void FormatByArKT();
 
 
 5.
@@ -374,7 +403,7 @@ twrp/bootable/recovery/gui/actions.cpp
 	ADD_ACTION(unmapsuperdevices);
 	ADD_ACTION(rotationbyarkt);
 	ADD_ACTION(mscbyarkt);
-	ADD_ACTION(formatwinbyarkt);
+	ADD_ACTION(formatbyarkt);
 	ADD_ACTION(printpartitionsbyarkt);
 	ADD_ACTION(rebootbyarkt);
 	ADD_ACTION(restorebyarkt);
@@ -462,11 +491,11 @@ int GUIAction::mscbyarkt(std::string arg)
 }
 
 // Format Windows partition (calls helper)
-int GUIAction::formatwinbyarkt(std::string arg __unused)
+int GUIAction::formatbyarkt(std::string arg __unused)
 {
     gui_changeOverlay("slideout");
     sync();
-    TWFunc::FormatWinByArKT();
+    TWFunc::FormatByArKT();
     return 0;
 }
 
@@ -703,7 +732,7 @@ twrp/bootable/recovery/gui/objects.hpp
 	int removedynamicgroups(std:: string arg);
 	int rotationbyarkt(std:: string arg);
 	int mscbyarkt(std:: string arg);
-	int formatwinbyarkt(std:: string arg);
+	int formatbyarkt(std:: string arg);
 	int printpartitionsbyarkt(std:: string arg);
 	int rebootbyarkt(std:: string arg);
 	int restorebyarkt(std:: string arg);

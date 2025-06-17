@@ -5583,8 +5583,12 @@
 
 			<button style="main_button">
 				<placement x="%center_x%" y="%row2a_y%"/>
-				<text>Format Win</text>
-				<action function="overlay">winformat_warn</action>
+				<text>Format Part...</text>
+				<actions>
+					<action function="set">arkt_format_esp=1</action>
+					<action function="set">arkt_format_win=1</action>
+					<action function="overlay">winformat_warn</action>
+				</actions>
 			</button>
 
 			<button style="main_button">
@@ -5667,6 +5671,76 @@
 				<text>{@yes_continue=Type yes to continue.  Press back to cancel.}</text>
 			</text>
 
+			<!-- Only Win selected (ESP unchecked) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<placement x="200" y="%row10_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_win=0</action>
+				<action function="set">arkt_format_esp=1</action> <!-- auto-re-enable ESP -->
+			</button>
+
+			<!-- Only ESP selected (Win unchecked) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="200" y="%row10_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_false"/>
+				<action function="set">arkt_format_win=1</action>
+			</button>
+
+			<!-- Both selected -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="200" y="%row10_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_win=0</action>
+			</button>
+
+			<!-- Neither selected, invalid state -->
+			<!-- Auto-correct by setting arkt_format_win=1 -->
+			<button>
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<action function="set">arkt_format_win=1</action>
+			</button>
+
+			<!-- Repeat exact same logic for ESP checkbox -->
+			<!-- ESP toggle when win=1 and esp=1 -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="600" y="%row10_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_esp=0</action>
+			</button>
+
+			<!-- ESP toggle when win=0 and esp=1 (will fix win if needed) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="600" y="%row10_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_esp=0</action>
+				<action function="set">arkt_format_win=1</action> <!-- fix: don't allow both off -->
+			</button>
+
+			<!-- ESP toggle when unchecked -->
+			<button style="checkbox">
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<placement x="600" y="%row10_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_false"/>
+				<action function="set">arkt_format_esp=1</action>
+			</button>
+
 			<input>
 				<placement x="504" y="%row13_y%" w="70" h="%input_height%"/>
 				<text>%confirm_formatwin%</text>
@@ -5676,7 +5750,7 @@
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
 					<action function="set">confirm_formatwin=</action>
-				    <action function="formatwinbyarkt"/>
+				    <action function="formatbyarkt"/>
 				</actions>
 			</input>
 
