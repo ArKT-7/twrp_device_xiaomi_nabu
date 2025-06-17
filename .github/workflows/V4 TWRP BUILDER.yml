@@ -105,7 +105,7 @@ jobs:
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
         IMG=V4-MODDED-TWRP-NEW-$(date +'%d-%m').img
-        ARTIFACT_NAME=UNZIP_IT-${IMG%.img}.zip
+        ARTIFACT_NAME=UNZIP_IT-${IMG%.img}
         mv "$OUT/${BUILD_TARGET}.img" "$OUT/$IMG"
         echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
         echo "img_name=$IMG" >> $GITHUB_ENV
