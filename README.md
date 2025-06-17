@@ -1,5 +1,22 @@
-# TWRP/ Modded TWRP for WOA Build Guide for Xiaomi Pad 5 (Nabu)
+# TWRP/ Modded TWRP for WOA for Xiaomi Pad 5 (Nabu)
 ## [Download Latest V4 Modded Recovery Here](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/releases/tag/mod)
+---
+
+## 🔁 Automated Builds via [GitHub Actions](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions)
+
+You can now build the recovery automatically using the pre-configured GitHub Actions [workflow](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions/workflows/V4%20TWRP%20BUILDER.yml).
+
+### ✅ How to Use:
+1. Fork or clone this repository.
+2. Go to the **[Actions](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions)** tab on GitHub.
+3. Select the workflow [(`V4-MODDED TWRP BUILD`)](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions/workflows/V4%20TWRP%20BUILDER.yml) and run it.
+4. Wait for the build to complete and download your recovery image from the artifacts.
+
+> 💡 *No local setup needed!*
+
+---
+
+## 🔧 Manual Building Guide
 ## 😏 BTW, this is all happening on Arch...
 
 ### 🔧 **Prerequisites**
