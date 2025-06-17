@@ -1,5 +1,5 @@
 # TWRP/ Modded TWRP for WOA for Xiaomi Pad 5 (Nabu)
-## [Download Latest V4 Modded Recovery Here](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/releases/tag/mod)
+## [Download Latest V4 Modded Recovery Here](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/releases/tag/mod-win)
 ---
 
 ## 🔁 Automated Builds via [GitHub Actions](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions)
