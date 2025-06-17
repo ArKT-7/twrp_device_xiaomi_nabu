@@ -1,0 +1,115 @@
+name: V4-MODDED TWRP BUILD
+
+on:
+  workflow_dispatch:
+
+env:
+  # ======= CONFIGURABLE VARIABLES =======
+  MANIFEST_URL: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git
+  MANIFEST_BRANCH: twrp-12.1
+
+  DEVICE_TREE_URL: https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git
+  DEVICE_TREE_BRANCH: mod
+  DEVICE_PATH: device/xiaomi/nabu
+
+  KERNEL_URL: https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git
+  KERNEL_BRANCH: "14.0"
+  KERNEL_PATH: kernel/xiaomi/nabu
+
+  DEVICE_NAME: nabu
+  MAKEFILE_NAME: twrp_nabu
+  BUILD_TARGET: boot
+
+jobs:
+  build:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Clean arkt
+      uses: rokibhasansagar/slimhub_actions@main
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update && sudo apt upgrade -y
+        DEBIAN_FRONTEND=noninteractive sudo apt install -y \
+          gperf gcc-multilib g++-multilib gcc-10-multilib g++-10-multilib \
+          libc6-dev lib32ncurses-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils \
+          xsltproc bc ccache liblz4-tool libncurses-dev libsdl1.2-dev \
+          build-essential libgtk-3-dev libglu1-mesa-dev freeglut3-dev git libxml2 lzop pngcrush schedtool squashfs-tools \
+          imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libncurses6 python3 tar neofetch
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '11'
+
+    - name: Setup SSH Keys (if needed)
+      if: |
+        startsWith(env.MANIFEST_URL, 'git@github.com') ||
+        startsWith(env.DEVICE_TREE_URL, 'git@github.com') ||
+        startsWith(env.KERNEL_URL, 'git@github.com')
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Install repo tool
+      run: |
+        mkdir -p ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
+
+    - name: Init and Sync Repo
+      run: |
+        mkdir arkt && cd arkt
+        git config --global user.name "${GITHUB_ACTOR}"
+        git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+        repo init --depth=1 -u "$MANIFEST_URL" -b "$MANIFEST_BRANCH"
+        repo sync -j$(nproc --all) --force-sync
+
+    - name: Clone Device Tree
+      run: |
+        git clone "$DEVICE_TREE_URL" -b "$DEVICE_TREE_BRANCH" "$DEVICE_PATH"
+      working-directory: arkt
+
+    - name: Clone Kernel
+      run: |
+        git clone "$KERNEL_URL" -b "$KERNEL_BRANCH" "$KERNEL_PATH"
+      working-directory: arkt
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 12
+
+    - name: Build Recovery
+      run: |
+        neofetch
+        patch -p1 < "$DEVICE_PATH/.arkt-changes/bootable-recovery.patch"
+        patch -p1 < "$DEVICE_PATH/.arkt-changes/build-make.patch"
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch "${MAKEFILE_NAME}-eng"
+        make clean
+        make "${BUILD_TARGET}image" -j$(nproc --all)
+      working-directory: arkt
+
+    - name: Rename Output
+      run: |
+        OUT=arkt/out/target/product/${DEVICE_NAME}
+        IMG=V4-MODDED-TWRP-NEW-$(date +'%d-%m').img
+        mv "$OUT/${BUILD_TARGET}.img" "$OUT/$IMG"
+        echo "artifact_name=$IMG" >> $GITHUB_ENV
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.artifact_name }}
+        path: arkt/out/target/product/${{ env.DEVICE_NAME }}/${{ env.artifact_name }}
