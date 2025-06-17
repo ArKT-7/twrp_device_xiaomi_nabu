@@ -31,7 +31,7 @@ jobs:
     - name: Checkout Repo
       uses: actions/checkout@v4
 
-    - name: Clean arkt
+    - name: Clean Workspace
       uses: rokibhasansagar/slimhub_actions@main
 
     - name: Install Dependencies
@@ -89,7 +89,7 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Build Recovery
+    - name: Build V4 Modded TWRP Recovery
       run: |
         neofetch
         patch -p1 < "$DEVICE_PATH/.arkt-changes/bootable-recovery.patch"
@@ -101,15 +101,17 @@ jobs:
         make "${BUILD_TARGET}image" -j$(nproc --all)
       working-directory: arkt
 
-    - name: Rename Output
+    - name: Prepare Upload
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
         IMG=V4-MODDED-TWRP-NEW-$(date +'%d-%m').img
+        ARTIFACT_NAME=UNZIP_IT-${IMG%.img}.zip
         mv "$OUT/${BUILD_TARGET}.img" "$OUT/$IMG"
-        echo "artifact_name=$IMG" >> $GITHUB_ENV
+        echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
+        echo "img_name=$IMG" >> $GITHUB_ENV
 
-    - name: Upload Artifact
+    - name: Upload V4 TWRP
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.artifact_name }}
-        path: arkt/out/target/product/${{ env.DEVICE_NAME }}/${{ env.artifact_name }}
+        path: arkt/out/target/product/${{ env.DEVICE_NAME }}/${{ env.img_name }}
