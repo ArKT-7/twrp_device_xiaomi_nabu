@@ -5742,8 +5742,12 @@ edi				<conditions>
 
 			<button style="main_button">
 				<placement x="%center_x%" y="%row2_y%"/>
-				<text>Format Windows</text>
-				<action function="overlay">winformat_warn</action>
+				<text>Format Partitions</text>
+				<actions>
+					<action function="set">arkt_format_esp=1</action>
+					<action function="set">arkt_format_win=1</action>
+					<action function="overlay">winformat_warn</action>
+				</actions>
 			</button>
 
 			<button style="main_button">
@@ -5801,30 +5805,100 @@ edi				<conditions>
 			<background color="#000000CC"/>
 
 			<text style="text_m_fail">
-				<placement x="%center_x%" y="%row1_y%" placement="5"/>
+				<placement x="%center_x%" y="144" placement="5"/>
 				<text>This will Format/wipe all data on Windows Partition,</text>
 			</text>
 
 			<text style="text_m_fail">
-				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<placement x="%center_x%" y="%row1_y%" placement="5"/>
 				<text>which includes backups, pictures, videos, media.</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row3_y%" placement="5"/>
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
 				<text>This will not delete Andorid Data.</text>
 			</text>
 
 			<text style="text_m">
-				<placement x="%center_x%" y="%row5_y%" placement="5"/>
+				<placement x="%center_x%" y="%row3a_y%" placement="5"/>
 				<text>{@format_data_undo=This cannot be undone.}</text>
 			</text>
 
 			<text style="text_m">
-				<placement x="%center_x%" y="%row6_y%" placement="5"/>
+				<placement x="%center_x%" y="%row4a_y%" placement="5"/>
 				<text>{@yes_continue=Type yes to continue.  Press back to cancel.}</text>
 			</text>
+
+			<!-- Only Win selected (ESP unchecked) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<placement x="666" y="%row6_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_win=0</action>
+				<action function="set">arkt_format_esp=1</action> <!-- auto-re-enable ESP -->
+			</button>
+
+			<!-- Only ESP selected (Win unchecked) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="666" y="%row6_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_false"/>
+				<action function="set">arkt_format_win=1</action>
+			</button>
+
+			<!-- Both selected -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="666" y="%row6_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_win=0</action>
+			</button>
+
+			<!-- Neither selected, invalid state -->
+			<!-- Auto-correct by setting arkt_format_win=1 -->
+			<button>
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<action function="set">arkt_format_win=1</action>
+			</button>
+
+			<!-- Repeat exact same logic for ESP checkbox -->
+			<!-- ESP toggle when win=1 and esp=1 -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="1016" y="%row6_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_esp=0</action>
+			</button>
+
+			<!-- ESP toggle when win=0 and esp=1 (will fix win if needed) -->
+			<button style="checkbox">
+				<condition var1="arkt_format_win" op="=" var2="0"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="1016" y="%row6_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_esp=0</action>
+				<action function="set">arkt_format_win=1</action> <!-- fix: don't allow both off -->
+			</button>
+
+			<!-- ESP toggle when unchecked -->
+			<button style="checkbox">
+				<condition var1="arkt_format_esp" op="=" var2="0"/>
+				<placement x="1016" y="%row6_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_false"/>
+				<action function="set">arkt_format_esp=1</action>
+			</button>
 
 			<input>
 				<placement x="932" y="%row8_y%" w="70" h="%input_height%"/>
@@ -5835,7 +5909,7 @@ edi				<conditions>
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
 					<action function="set">confirm_formatwin=</action>
-				    <action function="formatwinbyarkt"/>
+				    <action function="formatbyarkt"/>
 				</actions>
 			</input>
 
