@@ -109,10 +109,21 @@ jobs:
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
         IMG=V4-MODDED-TWRP-NEW-$(date +'%d-%m').img
+        TEST_IMG=TEST_$IMG
         ARTIFACT_NAME=UNZIP_IT-${IMG%.img}
         mv "$OUT/${BUILD_TARGET}.img" "$OUT/$IMG"
+        cp "$OUT/$IMG" "$OUT/$TEST_IMG"
         echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
         echo "img_name=$IMG" >> $GITHUB_ENV
+        echo "test_img_name=$TEST_IMG" >> $GITHUB_ENV
+
+    - name: Upload V4 TWRP to Release with TEST as prefix
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: mod-win
+        files: arkt/out/target/product/${{ env.DEVICE_NAME }}/${{ env.test_img_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload V4 TWRP
       uses: actions/upload-artifact@v4
