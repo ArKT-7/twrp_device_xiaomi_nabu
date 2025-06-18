@@ -122,7 +122,7 @@ TW_SCREEN_BLANK_ON_BOOT := true
 TW_EXCLUDE_TWRPAPP := true
 TW_EXCLUDE_APEX := true
 TW_INCLUDE_FASTBOOTD := true
-TW_NO_EXFAT_FUSE := true
+TW_NO_EXFAT_FUSE := false
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 TARGET_USES_MKE2FS := true
@@ -131,7 +131,6 @@ TW_VERBOSE_MOUNT_LOGGING := true
 TW_USE_USB_STORAGE := true
 TW_INCLUDE_TWRP_CMD := true
 TW_INCLUDE_TWRP_CLI := true
-# Keep screen always on (no timeout)
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
