@@ -3,10 +3,14 @@ winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
 esppart=/dev/block/platform/soc/1d84000.ufshc/by-name/esp
 [ -e "$winpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
 target=$1
+#force unmount and suppress errors
+force_umount() {
+    umount -lf "$1" 2>/dev/null || true
+}
 #format ESP only
 if [ "$target" = "esp" ]; then
     echo "Formatting ESP partition..."
-    umount "$esppart"
+    force_umount "$esppart"
     mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
     echo "ESP format done!"
     exit 0
@@ -14,15 +18,15 @@ fi
 #format WIN only
 if [ "$target" = "win" ]; then
     echo "Formatting WIN partition..."
-    umount "$winpart"
+    force_umount "$winpart"
     mkfs.ntfs -f "$winpart" -L WINNABU
     echo "WIN format done!"
     exit 0
 fi
 #normally format both
 echo "Formatting ESP and WIN partitions..."
-umount "$esppart"
-umount "$winpart"
+force_umount "$esppart"
+force_umount "$winpart"
 mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
 mkfs.ntfs -f "$winpart" -L WINNABU
 echo "Both partitions formatted successfully!"
