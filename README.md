@@ -82,6 +82,7 @@ git clone https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git -b 14.0 kern
 ```bash
 patch -p1 < device/xiaomi/nabu/.arkt-changes/bootable-recovery.patch
 patch -p1 < device/xiaomi/nabu/.arkt-changes/build-make.patch
+bash device/xiaomi/nabu/.arkt-changes/deleted_files.sh  
 ```
 
 #### 🚀 **Start Building**

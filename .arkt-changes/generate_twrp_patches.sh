@@ -1,8 +1,9 @@
 #!/bin/bash
 
-MODIFIED_DIR=$(realpath ~/android/latest-twrp-arkt)
+MODIFIED_DIR=$(realpath ~/android/twrp-arkt)
 CLEAN_DIR=$(realpath ~/android/back-twrp-arkt-new)
 PATCH_OUT=$(realpath ~/android/twrp_changes)
+DELETE_SCRIPT="$PATCH_OUT/deleted_files.sh"
 
 echo "[+] Backing up your TWRP edits from: $MODIFIED_DIR"
 echo "[+] Comparing against clean reference at: $CLEAN_DIR"
@@ -10,6 +11,8 @@ echo "[+] Saving patches to: $PATCH_OUT"
 echo
 
 mkdir -p "$PATCH_OUT"
+echo "#!/bin/bash" > "$DELETE_SCRIPT"
+chmod +x "$DELETE_SCRIPT"
 
 folders=(
   bootable/recovery
@@ -47,10 +50,21 @@ for folder in "${folders[@]}"; do
     else
       echo "    Saved: $OUT"
     fi
+
+    # Handle deleted files from REF not in MOD
+    while IFS= read -r line; do
+      dir_part=$(echo "$line" | sed "s|Only in $REF/||" | cut -d':' -f1)
+      file_part=$(echo "$line" | cut -d':' -f2- | sed 's|^ ||')
+      fullpath="$folder/$dir_part/$file_part"
+      echo "rm -f \"$fullpath\"" >> "$DELETE_SCRIPT"
+      echo "    Scheduled for deletion: $fullpath"
+    done < <(diff -rq "$REF" "$MOD" | grep "^Only in $REF")
+
   else
     echo "[!] Skipping $folder — not found in one of the trees"
   fi
 done
 
 echo
-echo "Done! You can re-apply any patch with: patch -p1 < patchfile.patch"
+echo "Done! You can re-apply patches with: patch -p1 < patchfile.patch"
+echo "Then run: bash deleted_files.sh  # to remove any deleted files"
