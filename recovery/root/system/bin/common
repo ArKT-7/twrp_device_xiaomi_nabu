@@ -49,13 +49,33 @@ EOF
     done
 }
 
-[ "$ignoreweirdness" != true ] && for i in 1 2 3 4; do test -e /dev/block/platform/soc/1d84000.ufshc/by-name/bk0$i || {
-    echo "this script will NOT work with weird partition layouts! please restore the partition table by flashing gpt_both0 in fastboot!"
-    exit 1
-}; done
+stockpart(){
+sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda
+}
+
+[ "$ignoreweirdness" != true ] && for i in 1 2 3 4; do 
+    test -e /dev/block/platform/soc/1d84000.ufshc/by-name/bk0$i || {
+        echo "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST."
+        echo ""
+        echo -n "Do you want to continue? (y/n): "
+        read yn
+        case "$yn" in
+            [Yy]*) 
+                echo "Restoring the stock partition layout now..."
+                stockpart
+                ;;
+            *)
+                echo "Can't proceed without restoring the table."
+                exit 1
+                ;;
+        esac
+    }
+done
+
 [ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ] && echo "msc is enabled! aborting..." && echo "reboot and run the script again." && exit 1
 
 if getprop sys.usb.config | grep -q "mtp"; then
+    echo " "
     echo "run the script again!"
     sleep 1
     setprop sys.usb.config adb
@@ -72,14 +92,19 @@ for i in esp win firmware mnt userdata metadata misc vendor; do umount -lf /dev/
 if [ "$ignoreweirdness" != true ]; then
     weirdparts=$(find /dev/block -type b | grep -E '/sda(3[4-9]|[4-9][0-9])$')
     if [ -n "$weirdparts" ]; then
-        echo -n "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST. Continue (y/n)? "
+        echo "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST."
+        echo ""
+        echo -n "Do you want to continue? (y/n): "
         read yn
         case "$yn" in
-            [Yy]*) ;;
-            *) echo "Can't proceed without restoring the table."; exit 1 ;;
+            [Yy]*) 
+                echo "Restoring the stock partition layout now..."
+                stockpart
+                ;;
+            *) 
+                echo "Can't proceed without restoring the table."
+                exit 1
+                ;;
         esac
-        echo "Restoring the stock partition layout now..."
-        restore
-        exit 0
     fi
 fi
