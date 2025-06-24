@@ -5702,13 +5702,16 @@
 				<action function="set">arkt_format_win=0</action>
 			</button>
 
-			<!-- Neither selected, invalid state -->
-			<!-- Auto-correct by setting arkt_format_win=1 -->
-			<action>
-				<condition var1="arkt_format_win" op="=" var2="0"/>
-				<condition var1="arkt_format_esp" op="=" var2="0"/>
-				<action function="set">arkt_format_win=1</action>
-			</action>
+			<!-- Neither selected — invalid state -->
+			<!-- Auto-correct by setting tw_format_win=1 -->
+			<button>
+				<condition var1="tw_format_win" op="=" var2="0"/>
+				<condition var1="tw_format_esp" op="=" var2="0"/>
+				<placement x="%center_x%" y="%row9_y%" placement="5"/>
+				<text>Fixing invalid checkbox state...</text>
+				<image resource="console"/>
+				<action function="set">tw_format_win=1</action>
+			</button>
 
 			<!-- Repeat exact same logic for ESP checkbox -->
 			<!-- ESP toggle when win=1 and esp=1 -->
