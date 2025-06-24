@@ -322,7 +322,6 @@ twres/languages/uk.xml
 twres/languages/pl.xml
 twres/languages/de.xml
 twres/languages/sk.xml
-twres/languages/lk.xml
 twres/languages/cz.xml
 twres/languages/pt_BR.xml
 twres/languages/es.xml
@@ -333,7 +332,6 @@ twres/languages/tr.xml
 twres/languages/pt_PT.xml
 twres/splash.xml
 twres/fonts
-twres/fonts/Sinhala.ttf
 twres/fonts/DroidSansFallback.ttf
 twres/fonts/NotoSansCJKjp-Regular.ttf
 twres/fonts/OFL.txt
@@ -3561,6 +3559,7 @@ system/bin/true
 system/bin/umount
 system/bin/logd
 system/bin/simg2img
+system/bin/exfat-fuse
 system/bin/getenforce
 system/bin/sleep
 system/bin/fixgpt
@@ -3593,6 +3592,7 @@ system/bin/minadbd
 system/bin/chattr
 system/bin/du
 system/bin/android.hardware.keymaster@4.1-service-qti
+system/bin/stock_gpt
 system/bin/log
 system/bin/tzdata_twrp-timestamp
 system/bin/touch
