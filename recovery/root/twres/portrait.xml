@@ -5704,11 +5704,11 @@
 
 			<!-- Neither selected, invalid state -->
 			<!-- Auto-correct by setting arkt_format_win=1 -->
-			<button>
+			<action>
 				<condition var1="arkt_format_win" op="=" var2="0"/>
 				<condition var1="arkt_format_esp" op="=" var2="0"/>
 				<action function="set">arkt_format_win=1</action>
-			</button>
+			</action>
 
 			<!-- Repeat exact same logic for ESP checkbox -->
 			<!-- ESP toggle when win=1 and esp=1 -->

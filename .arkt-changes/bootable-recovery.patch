@@ -1,6 +1,6 @@
 diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-06-03 15:35:09.874046726 +0530
-+++ /bootable/recovery/data.cpp	2025-06-18 03:15:39.574089030 +0530
+--- /bootable/recovery/data.cpp	2025-06-18 23:59:50.151347498 +0530
++++ /bootable/recovery/data.cpp	2025-06-24 23:39:42.204879508 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,8 +12,8 @@ diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
  #ifdef BOARD_BOOT_HEADER_VERSION
 Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
 diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-06-03 15:35:09.914046208 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-06-18 03:13:39.847941050 +0530
+--- /bootable/recovery/gui/action.cpp	2025-06-18 23:59:50.234678813 +0530
++++ /bootable/recovery/gui/action.cpp	2025-06-24 23:39:42.204879508 +0530
 @@ -209,6 +209,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -335,8 +335,8 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    return 0;
 +}
 diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-06-03 15:35:09.917379497 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-06-18 03:13:51.451223566 +0530
+--- /bootable/recovery/gui/objects.hpp	2025-06-18 23:59:50.238012066 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-06-24 23:39:42.208212957 +0530
 @@ -334,6 +334,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -354,7 +354,7 @@ diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
  	int fileexists(std::string arg);
 Binary files /bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf and /bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf differ
 diff -ruN /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootable/recovery/gui/theme/extra-languages/languages/lk.xml
---- /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	2025-06-03 15:35:09.930712657 +0530
+--- /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	2025-06-18 23:59:50.268011339 +0530
 +++ /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	1970-01-01 05:30:00.000000000 +0530
 @@ -1,774 +0,0 @@
 -<?xml version="1.0" encoding="utf-8"?>
@@ -1132,8 +1132,8 @@ diff -ruN /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootabl
 -	</resources>
 -</language>
 diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp.cpp	2025-06-03 16:18:30.288587389 +0530
+--- /bootable/recovery/twrp.cpp	2025-06-18 23:59:50.214679298 +0530
++++ /bootable/recovery/twrp.cpp	2025-06-24 23:39:42.208212957 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -1153,8 +1153,8 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  	// Launch the main GUI
  	gui_start();
 diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-18 03:12:28.791588495 +0530
+--- /bootable/recovery/twrp-functions.cpp	2025-06-18 23:59:50.214679298 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-06-24 23:39:42.208212957 +0530
 @@ -1659,4 +1659,313 @@
  	return ret;
  }
@@ -1470,8 +1470,8 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-06-03 15:35:09.880713307 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-06-18 03:12:36.138222441 +0530
+--- /bootable/recovery/twrp-functions.hpp	2025-06-18 23:59:50.214679298 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-06-24 23:39:42.211546406 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -1485,8 +1485,8 @@ diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-function
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN /bootable/recovery/variables.h /bootable/recovery/variables.h
---- /bootable/recovery/variables.h	2025-06-03 15:35:09.884046597 +0530
-+++ /bootable/recovery/variables.h	2025-06-14 02:39:37.052919729 +0530
+--- /bootable/recovery/variables.h	2025-06-18 23:59:50.218012551 +0530
++++ /bootable/recovery/variables.h	2025-06-24 23:39:42.211546406 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
