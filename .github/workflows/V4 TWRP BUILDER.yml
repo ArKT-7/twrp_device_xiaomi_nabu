@@ -2,7 +2,7 @@ name: V4-MODDED TWRP BUILD
 
 on:
   push:
-    branches: [ "mod" ]
+    branches: [ "mod-windows" ]
 
   workflow_dispatch:
   
@@ -12,7 +12,7 @@ env:
   MANIFEST_BRANCH: twrp-12.1
 
   DEVICE_TREE_URL: https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git
-  DEVICE_TREE_BRANCH: mod
+  DEVICE_TREE_BRANCH: mod-windows
   DEVICE_PATH: device/xiaomi/nabu
 
   KERNEL_URL: https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git
