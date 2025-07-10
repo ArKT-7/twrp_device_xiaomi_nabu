@@ -3439,6 +3439,7 @@ system/etc/vintf/manifest
 system/etc/vintf/manifest/android.hidl.allocator@1.0-service.xml
 system/etc/vintf/manifest/android.system.keystore2-service.xml
 system/etc/vintf/manifest/android.system.suspend@1.0-service.xml
+system/etc/vintf/manifest/boot-service.qti.xml
 system/etc/vintf/manifest.xml
 system/etc/security
 system/etc/security/otacerts.zip

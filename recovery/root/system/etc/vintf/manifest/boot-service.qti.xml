@@ -1,0 +1,7 @@
+<!--
+  Dummy manifests to satisfy TWRP's VINTF and boot-service checks.
+  Prevents TWRP hang on boot by avoiding missing manifest and boot-service errors.
+  Mimics vendor_boot’s android.hardware.boot HAL for compatibility.
+-->
+<manifest version="1.0" type="framework">
+</manifest>
