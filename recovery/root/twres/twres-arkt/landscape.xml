@@ -3895,6 +3895,9 @@
 				<listitem name="Rotate Screen to Portrait">
 				<action function="rotationbyarkt"/>
 				</listitem>
+				<listitem name="Boot to Windows">
+				<action function="bootwinbyarkt"/>
+				</listitem>
 			</listbox>
 			<action>
 				<touch key="home"/>
@@ -5766,6 +5769,12 @@ edi				<conditions>
 				<placement x="%center_x%" y="%row11_y%"/>
 				<text>Partitioning</text>
 				<action function="partitionaskbyarkt"/>
+			</button>
+
+			<button style="main_button">
+				<placement x="%col1_x_left%" y="%row11_y%"/>
+				<text>Boot to Windows</text>
+				<action function="bootwinbyarkt"/>
 			</button>
 
 			<listbox style="advanced_listbox_arkt">

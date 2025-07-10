@@ -4018,6 +4018,9 @@
 				<listitem name="Rotate Screen to Landscape">
 				<action function="rotationbyarkt"/>
 				</listitem>
+				<listitem name="Boot to Windows">
+				<action function="bootwinbyarkt"/>
+				</listitem>
 			</listbox>
 
 			<action>
@@ -5607,6 +5610,12 @@
 				<placement x="%center_x%" y="%row13a_y%"/>
 				<text>Partitioning</text>
 				<action function="partitionaskbyarkt"/>
+			</button>
+
+			<button style="main_button">
+				<placement x="%indent%" y="%row13a_y%"/>
+				<text>Boot to Win...</text>
+				<action function="bootwinbyarkt"/>
 			</button>
 
 			<listbox style="advanced_listbox_arkt">

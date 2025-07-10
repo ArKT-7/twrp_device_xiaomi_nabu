@@ -1,0 +1,65 @@
+#!/sbin/bash
+. common
+
+RESERVED_START=20000
+RESERVED_END=7000
+
+usable_mb=$((max - RESERVED_START - RESERVED_END))
+dualmax=$((usable_mb / 1000))
+input="${1-}"
+size=$(echo "$input" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sed 's/gb$//;s/[^0-9.]//g')
+if [[ -z "$input" ]]; then
+    dualend=$(((max + RESERVED_START) / 2))
+else
+    if ! [[ "$size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "Invalid input. Please enter a number (e.g., 60GB)" >&2
+        exit 1
+    fi
+    size_int=$(echo "$size" | cut -d'.' -f1)
+    if (( size_int < 25 || size_int > dualmax )); then
+        echo "Invalid size! Min: 25GB, Max: ${dualmax}GB" >&2
+        exit 1
+    fi
+    dualend=$(echo "$size * 1000" | bc)
+    dualend=$(printf "%.0f" "$dualend")
+    dualend=$(( (dualend + 1023) / 1024 * 1024 ))
+    dualend=$((dualend + RESERVED_START))
+fi
+userdata_gb=$(echo "scale=2; ($dualend - $RESERVED_START) / 1000" | bc)
+userdata2_gb=$(echo "scale=2; ($max - $dualend) / 1000" | bc)
+echo ""
+echo "Current Android data: $userdata_gb GB"
+echo "Other Android Data: $userdata2_gb GB"
+while true; do
+  echo ""
+  echo -n "Does this look good? (y/n): "
+  read yn
+  case "$yn" in
+    [Yy]* ) break ;;
+    [Nn]* ) echo "Operation cancelled"; exit 1 ;;
+    * ) echo "Please enter (yes/y/Y or no/n/N)." ;;
+  esac
+done
+echo ""
+echo "Proceeding with dual system partitioning..."
+echo ""
+disk=/dev/block/sda
+removeparts
+sgdisk --resize-table 64 "$disk"
+parted -s "$disk" \
+  name 16 _metadata_ \
+  name 29 arkt \
+  mkpart _super_ ext4 10872MB 20000MB \
+  mkpart _userdata_ ext4 20000MB "${dualend}MB" \
+  mkpart userdata ext4 "${dualend}MB" 100% \
+
+sync
+make_f2fs -f -g android /dev/block/sda31
+make_f2fs -f -g android /dev/block/sda32
+make_f2fs -f -g android /dev/block/sda33
+mke2fs -t ext4 -F /dev/block/sda16
+mke2fs -t ext4 -F /dev/block/sda19
+mke2fs -t ext4 -F /dev/block/sda29
+sync
+parted "$disk" p free
+echo "done!"

@@ -1,6 +1,6 @@
 diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-06-18 23:59:50.151347498 +0530
-+++ /bootable/recovery/data.cpp	2025-06-24 23:39:42.204879508 +0530
++++ /bootable/recovery/data.cpp	2025-06-19 00:36:46.358066596 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -13,8 +13,8 @@ diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
 diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-06-18 23:59:50.234678813 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-06-24 23:39:42.204879508 +0530
-@@ -209,6 +209,14 @@
++++ /bootable/recovery/gui/action.cpp	2025-06-22 00:09:01.031687366 +0530
+@@ -209,6 +209,15 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
@@ -26,10 +26,11 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +		ADD_ACTION(restorebyarkt);
 +		ADD_ACTION(partitionaskbyarkt);
 +		ADD_ACTION(partitionByArKT);
++		ADD_ACTION(bootwinbyarkt);
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -593,6 +601,7 @@
+@@ -593,6 +602,7 @@
  	// to prevent crashing which could occur when we start deleting
  	// GUI resources in the action thread while we attempt to render
  	// with those same resources in another thread.
@@ -37,7 +38,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
  	return 0;
  }
  
-@@ -668,6 +677,7 @@
+@@ -668,6 +678,7 @@
  		PartitionManager.Mount_Current_Storage(true);
  	}
  	operation_end(0);
@@ -45,7 +46,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
  	return 0;
  }
  
-@@ -2365,3 +2375,288 @@
+@@ -2365,3 +2376,313 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -148,6 +149,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    }
 +    return 0;
 +}
++
 +
 +// Restore stock partitions after confirmation ("pass" arg)
 +int GUIAction::restorebyarkt(std::string arg __unused)
@@ -334,10 +336,34 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    sync();
 +    return 0;
 +}
++
++int GUIAction::bootwinbyarkt(std::string arg __unused)
++{
++
++    gui_changeOverlay("slideout");
++    sync();
++
++    // Run restore steps asynchronously to avoid blocking UI
++    std::thread([] {
++        std::this_thread::sleep_for(std::chrono::milliseconds(300));
++
++        gui_print("Flashing UEFI for Windows...\n\n");
++        TWFunc::Exec_Cmd("dd if=/system/bin/uefi.img of=/dev/block/by-name/boot$(getprop ro.boot.slot_suffix)");
++
++        gui_print("Rebooting to Windows now!\n");
++		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
++		gui_print("BOMB!!!!!\n");
++		std::this_thread::sleep_for(std::chrono::milliseconds(500));
++        TWFunc::Exec_Cmd("reboot >/dev/null 2>&1 || true");
++    }).detach();
++
++    sync();
++    return 0;
++}
 diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-06-18 23:59:50.238012066 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-06-24 23:39:42.208212957 +0530
-@@ -334,6 +334,14 @@
++++ /bootable/recovery/gui/objects.hpp	2025-06-21 23:42:55.527909812 +0530
+@@ -334,6 +334,16 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
@@ -349,6 +375,8 @@ diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 +	int restorebyarkt(std:: string arg);
 +	int partitionaskbyarkt(std:: string arg);
 +	int partitionByArKT(std:: string arg);
++	int bootwinbyarkt(std:: string arg);
++
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
@@ -1133,7 +1161,7 @@ diff -ruN /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootabl
 -</language>
 diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp.cpp	2025-06-24 23:39:42.208212957 +0530
++++ /bootable/recovery/twrp.cpp	2025-06-19 00:36:46.361399927 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -1154,7 +1182,7 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  	gui_start();
 diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-24 23:39:42.208212957 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-06-19 00:36:46.361399927 +0530
 @@ -1659,4 +1659,313 @@
  	return ret;
  }
@@ -1471,7 +1499,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-06-24 23:39:42.211546406 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-06-19 00:36:46.361399927 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -1486,7 +1514,7 @@ diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-function
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-06-18 23:59:50.218012551 +0530
-+++ /bootable/recovery/variables.h	2025-06-24 23:39:42.211546406 +0530
++++ /bootable/recovery/variables.h	2025-06-19 00:36:46.361399927 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_

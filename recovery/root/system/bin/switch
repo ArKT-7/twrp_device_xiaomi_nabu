@@ -1,0 +1,80 @@
+#!/sbin/bash
+
+MOUNT_POINT="/tmp/arkt"
+MARKER_FILE="$MOUNT_POINT/.last_used"
+
+# Mount arkt partition
+mkdir -p $MOUNT_POINT
+umount /dev/block/by-name/arkt
+mount /dev/block/by-name/arkt $MOUNT_POINT
+
+# Detect last used ROM from marker file
+if [ -f "$MARKER_FILE" ]; then
+    LAST_USED=$(cat "$MARKER_FILE")
+else
+    LAST_USED="none"
+fi
+
+if [ "$LAST_USED" = "arkt1" ]; then
+    CURRENT_ROM="arkt2"
+    OTHER_ROM="arkt1"
+else
+    CURRENT_ROM="arkt1"
+    OTHER_ROM="arkt2"
+fi
+
+echo -e "Last used: $LAST_USED"
+echo -e "Current ROM: $CURRENT_ROM"
+echo -e "Other ROM: $OTHER_ROM"
+
+# Display partition info before switching
+echo "Partition Info Before Switching:"
+parted /dev/block/sda print
+
+echo "\nSwitching partitions...\n"
+parted /dev/block/sda \
+    name $( parted /dev/block/sda print | grep -w "metadata" | awk '{print $1}') _metadata_ \
+    name $( parted /dev/block/sda print | grep -w "super" | awk '{print $1}') _super_ \
+    name $( parted /dev/block/sda print | grep -w "userdata" | awk '{print $1}') _userdata_ \
+    name $( parted /dev/block/sda print | grep -w "_metadata_" | awk '{print $1}') metadata \
+    name $( parted /dev/block/sda print | grep -w "_super_" | awk '{print $1}') super \
+    name $( parted /dev/block/sda print | grep -w "_userdata_" | awk '{print $1}') userdata \
+    q
+
+echo "\nPartition Info after Switching:"
+parted /dev/block/sda print
+
+echo "\nBacking up partitions to $CURRENT_ROM...\n"
+mkdir -p $MOUNT_POINT/$CURRENT_ROM
+mkdir -p $MOUNT_POINT/$OTHER_ROM
+
+CURRENT_SLOT_SUFFIX=$(getprop ro.boot.slot_suffix)
+if [ -z "$CURRENT_SLOT_SUFFIX" ]; then
+    SLOT=$(getprop ro.boot.slot)
+    CURRENT_SLOT_SUFFIX="_$SLOT"
+fi
+
+echo "Active Slot: $CURRENT_SLOT_SUFFIX"
+
+PARTITIONS=(boot dtbo vendor_boot vbmeta_system vbmeta)
+
+# Backup current slot only
+for part in "${PARTITIONS[@]}"; do
+    BACKUP_PATH="$MOUNT_POINT/$CURRENT_ROM/${part}${CURRENT_SLOT_SUFFIX}.img"
+    echo -e "Backing up ${part}${CURRENT_SLOT_SUFFIX} to $BACKUP_PATH"
+    dd if=/dev/block/bootdevice/by-name/${part}${CURRENT_SLOT_SUFFIX} of=$BACKUP_PATH bs=8M
+done
+
+# Flash current slot only
+echo -e "\nFlashing current slot partitions from $OTHER_ROM...\n"
+for part in "${PARTITIONS[@]}"; do
+    IMAGE_PATH="$MOUNT_POINT/$OTHER_ROM/${part}${CURRENT_SLOT_SUFFIX}.img"
+    echo -e "Flashing ${part}${CURRENT_SLOT_SUFFIX} from $IMAGE_PATH"
+    dd if=$IMAGE_PATH of=/dev/block/bootdevice/by-name/${part}${CURRENT_SLOT_SUFFIX} bs=8M
+done
+
+# Update marker for next time
+echo "$CURRENT_ROM" > "$MARKER_FILE"
+
+echo -e "\nSwitch complete! Next time it will backup $OTHER_ROM and flash $CURRENT_ROM.\n"
+exit 0
