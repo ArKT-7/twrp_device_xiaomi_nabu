@@ -84,7 +84,7 @@ jobs:
 
     - name: Clone Kernel
       run: |
-        git clone "$KERNEL_URL" -b "$KERNEL_BRANCH" "$KERNEL_PATH"
+        git clone --depth=1 "$KERNEL_URL" -b "$KERNEL_BRANCH" "$KERNEL_PATH"
       working-directory: arkt
 
     - name: Set Swap Space
@@ -108,7 +108,7 @@ jobs:
     - name: Prepare Upload
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
-        IMG=V4-MODDED-TWRP-NEW-$(date +'%d-%m').img
+        IMG=V4-MODDED-TWRP-WINDOWS-$(date +'%d-%m').img
         TEST_IMG=TEST_$IMG
         ARTIFACT_NAME=UNZIP_IT-${IMG%.img}
         mv "$OUT/${BUILD_TARGET}.img" "$OUT/$IMG"
