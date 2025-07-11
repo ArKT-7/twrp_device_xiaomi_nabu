@@ -74,7 +74,7 @@ repo sync
 
 ```bash
 git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod-windows device/xiaomi/nabu
-git clone https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git -b 14.0 kernel/xiaomi/nabu
+git clone --depth=1 https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git -b 14.0 kernel/xiaomi/nabu
 ```
 
 #### 🧩 **Step 3: Patch sources for Mod twrp**
