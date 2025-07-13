@@ -59,13 +59,13 @@ git config --global user.email "you@example.com"
 ##### Next, initialize the repo:
 
 ```bash
-repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
+repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
 ```
 
 #### Then sync the repo:
 
 ```bash
-repo sync
+repo sync -j$(nproc --all) --force-sync
 ```
 
 #### 📦 **Step 2: Clone Your Modded Device Tree for Nabu**
@@ -91,7 +91,7 @@ bash device/xiaomi/nabu/.arkt-changes/deleted_files.sh
 source build/envsetup.sh
 lunch twrp_nabu-eng
 mka clean
-mka bootimage
+mka bootimage -j$(nproc --all)
 ```
 
 #### 📂 **Output**
