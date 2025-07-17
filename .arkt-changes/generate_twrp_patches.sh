@@ -1,8 +1,8 @@
 #!/bin/bash
 
 MODIFIED_DIR=$(realpath ~/android/twrp-arkt)
-CLEAN_DIR=$(realpath ~/android/back-twrp-arkt-new)
-PATCH_OUT=$(realpath ~/android/twrp_changes)
+CLEAN_DIR=$(realpath ~/android/twrp-arkt-backup)
+PATCH_OUT=$(realpath ~/android/twrp-changes)
 DELETE_SCRIPT="$PATCH_OUT/deleted_files.sh"
 
 echo "[+] Backing up your TWRP edits from: $MODIFIED_DIR"
@@ -18,7 +18,6 @@ folders=(
   bootable/recovery
   system/core
   vendor/twrp
-  device/xiaomi/nabu
   external/libziparchive
   build/make
 )
@@ -32,13 +31,13 @@ for folder in "${folders[@]}"; do
     echo "[*] Generating patch for: $folder"
 
     TMP_PATCH=$(mktemp)
-    diff -ruN "$REF" "$MOD" > "$TMP_PATCH"
+    diff -ruN --exclude='.git' "$REF" "$MOD" > "$TMP_PATCH"
 
     # Escape slashes for sed
     ESC_CLEAN_DIR=$(echo "$CLEAN_DIR" | sed 's|/|\\/|g')
     ESC_MODIFIED_DIR=$(echo "$MODIFIED_DIR" | sed 's|/|\\/|g')
 
-    # Remove the full absolute path but keep leading slash in path
+    # Clean absolute paths
     sed -e "s|$ESC_CLEAN_DIR||g" -e "s|$ESC_MODIFIED_DIR||g" "$TMP_PATCH" | \
     sed -e 's|--- \([^/]\)|--- /\1|' -e 's|+++ \([^/]\)|+++ /\1|' > "$OUT"
 
@@ -51,14 +50,17 @@ for folder in "${folders[@]}"; do
       echo "    Saved: $OUT"
     fi
 
-    # Handle deleted files from REF not in MOD
+    # Deleted files (skip .git too)
     while IFS= read -r line; do
       dir_part=$(echo "$line" | sed "s|Only in $REF/||" | cut -d':' -f1)
       file_part=$(echo "$line" | cut -d':' -f2- | sed 's|^ ||')
       fullpath="$folder/$dir_part/$file_part"
+      if [[ "$fullpath" == *".git/"* || "$fullpath" == *"/.git" || "$fullpath" == *"/.gitignore" ]]; then
+        continue
+      fi
       echo "rm -f \"$fullpath\"" >> "$DELETE_SCRIPT"
       echo "    Scheduled for deletion: $fullpath"
-    done < <(diff -rq "$REF" "$MOD" | grep "^Only in $REF")
+    done < <(diff -rq --exclude='.git' "$REF" "$MOD" | grep "^Only in $REF")
 
   else
     echo "[!] Skipping $folder — not found in one of the trees"
