@@ -1,11 +1,11 @@
 #!/sbin/bash
-win=/dev/block/sda32
-esp=/dev/block/sda31
-removeparts(){
-    for i in $(seq 31 40); do
-        parted -s /dev/block/sda rm $i 2>/dev/null
-    done
+win=/dev/block/platform/soc/1d84000.ufshc/sda32
+esp=/dev/block/platform/soc/1d84000.ufshc/sda31
+
+stockpart(){
+sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda
 }
+
 formatwinesp(){
 mkfs.fat -F32 -s1 $esp -n ESPNABU
 mkfs.ntfs -f $win -L WINNABU
@@ -22,55 +22,15 @@ mke2fs -t ext4 -F /dev/block/sda19
 }
 
 restore(){
-removeparts
-parted -s /dev/block/sda mkpart userdata ext4 10872MB  100%
-sgdisk --resize-table 32 /dev/block/sda
+stockpart
+parted -s /dev/block/sda resizepart 31 100%
 sync
 formatdata
 }
 
 fixgpt() {
-    run_gdisk() {
-        local DEVICE=$1
-        gdisk "$DEVICE" <<EOF
-x
-j
-
-k
-
-w
-Y
-EOF
-    }
-
-    for i in a b c d e f; do
-        DEVICE="/dev/block/sd$i"
-        run_gdisk "$DEVICE"
-    done
+  for dev in /dev/block/sd{a..f}; do gdisk "$dev" <<< $'x\nj\n\nk\n\nw\nY\n'; done
 }
-
-stockpart(){
-sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda
-}
-
-[ "$ignoreweirdness" != true ] && for i in 1 2 3 4; do 
-    test -e /dev/block/platform/soc/1d84000.ufshc/by-name/bk0$i || {
-        echo "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST."
-        echo ""
-        echo -n "Do you want to continue? (y/n): "
-        read yn
-        case "$yn" in
-            [Yy]*) 
-                echo "Restoring the stock partition layout now..."
-                stockpart
-                ;;
-            *)
-                echo "Can't proceed without restoring the table."
-                exit 1
-                ;;
-        esac
-    }
-done
 
 [ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ] && echo "msc is enabled! aborting..." && echo "reboot and run the script again." && exit 1
 
@@ -87,24 +47,4 @@ max=$(( $(blockdev --getsize64 /dev/block/sda) / 1000000 ))
 
 for i in sdcard data; do umount -lf /$i 2>/dev/null; done
 dmsetup remove -f userdata 2>/dev/null
-for i in esp win firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done
-
-if [ "$ignoreweirdness" != true ]; then
-    weirdparts=$(find /dev/block -type b | grep -E '/sda(3[4-9]|[4-9][0-9])$')
-    if [ -n "$weirdparts" ]; then
-        echo "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST."
-        echo ""
-        echo -n "Do you want to continue? (y/n): "
-        read yn
-        case "$yn" in
-            [Yy]*) 
-                echo "Restoring the stock partition layout now..."
-                stockpart
-                ;;
-            *) 
-                echo "Can't proceed without restoring the table."
-                exit 1
-                ;;
-        esac
-    fi
-fi
+for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done

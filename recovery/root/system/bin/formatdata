@@ -1,5 +1,4 @@
 #!/sbin/bash
-ignoreweirdness=true
 . common
 userdata=/dev/block/platform/soc/1d84000.ufshc/by-name/userdata
 metadata=/dev/block/platform/soc/1d84000.ufshc/by-name/metadata

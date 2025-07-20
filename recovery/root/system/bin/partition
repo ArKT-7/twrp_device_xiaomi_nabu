@@ -44,9 +44,10 @@ echo ""
 echo "Proceeding with Windows partitioning..."
 echo ""
 disk=/dev/block/sda
-removeparts
+stockpart
 sgdisk --resize-table 64 "$disk"
 parted -s "$disk" \
+  rm 31 \
   mkpart esp fat32 10872MB 11222MB \
   mkpart win ntfs 11222MB "${winend}MB" \
   mkpart userdata ext4 "${winend}MB" 100% \

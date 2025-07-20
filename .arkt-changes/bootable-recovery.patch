@@ -1,6 +1,6 @@
-diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-06-18 23:59:50.151347498 +0530
-+++ /bootable/recovery/data.cpp	2025-06-24 23:39:42.204879508 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
+--- /bootable/recovery/data.cpp	2025-07-17 14:42:09.087906925 +0530
++++ /bootable/recovery/data.cpp	2025-07-20 20:29:21.792122872 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -10,10 +10,9 @@ diff -ruN /bootable/recovery/data.cpp /bootable/recovery/data.cpp
  	mPersist.SetValue("tw_no_screen_timeout", "0");
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
-Binary files /bootable/recovery/.git/index and /bootable/recovery/.git/index differ
-diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-06-18 23:59:50.234678813 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-06-24 23:39:42.204879508 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
+--- /bootable/recovery/gui/action.cpp	2025-07-17 14:42:09.097402559 +0530
++++ /bootable/recovery/gui/action.cpp	2025-07-20 22:18:58.989504843 +0530
 @@ -209,6 +209,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -45,7 +44,7 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
  	return 0;
  }
  
-@@ -2365,3 +2375,288 @@
+@@ -2365,3 +2375,289 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -284,13 +283,14 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +        unsigned long long winend;
 +        DataManager::GetValue("win_end_size", winend);
 +
-+        gui_print("Removing partitions...\n");
-+        TWFunc::Exec_Cmd("for i in $(seq 31 40); do parted -s /dev/block/sda rm $i 2>/dev/null || true; done");
++        gui_print("Making partitions stock...\n");
++        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
 +
 +        gui_print("Resizing partition table...\n");
 +        TWFunc::Exec_Cmd("sgdisk --resize-table 64 /dev/block/sda");
 +
 +        gui_print("Creating partitions...\n");
++		TWFunc::Exec_Cmd("parted -s /dev/block/sda rm 31");
 +        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart esp fat32 10872MB 11222MB");
 +
 +        std::string win_end_str = std::to_string(winend) + "MB";
@@ -334,9 +334,9 @@ diff -ruN /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 +    sync();
 +    return 0;
 +}
-diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-06-18 23:59:50.238012066 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-06-24 23:39:42.208212957 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
+--- /bootable/recovery/gui/objects.hpp	2025-07-17 14:42:09.098091657 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-07-20 20:29:21.794089292 +0530
 @@ -334,6 +334,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -353,8 +353,8 @@ diff -ruN /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
  	// (originally) threaded actions
  	int fileexists(std::string arg);
 Binary files /bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf and /bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf differ
-diff -ruN /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootable/recovery/gui/theme/extra-languages/languages/lk.xml
---- /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	2025-06-18 23:59:50.268011339 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootable/recovery/gui/theme/extra-languages/languages/lk.xml
+--- /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	2025-07-17 14:42:09.119208645 +0530
 +++ /bootable/recovery/gui/theme/extra-languages/languages/lk.xml	1970-01-01 05:30:00.000000000 +0530
 @@ -1,774 +0,0 @@
 -<?xml version="1.0" encoding="utf-8"?>
@@ -1131,9 +1131,9 @@ diff -ruN /bootable/recovery/gui/theme/extra-languages/languages/lk.xml /bootabl
 -		<string name="reboot_after_restore">First boot එකට පස්ෙස එක පාරක් Android එකට Reboot කරන එක ෙහාදයි.</string>
 -	</resources>
 -</language>
-diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp.cpp	2025-06-24 23:39:42.208212957 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
+--- /bootable/recovery/twrp.cpp	2025-07-17 14:42:09.176738993 +0530
++++ /bootable/recovery/twrp.cpp	2025-07-20 20:29:21.795029470 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -1152,10 +1152,10 @@ diff -ruN /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
  
  	// Launch the main GUI
  	gui_start();
-diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-06-24 23:39:42.208212957 +0530
-@@ -1659,4 +1659,313 @@
+diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
+--- /bootable/recovery/twrp-functions.cpp	2025-07-17 14:42:09.176566325 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-07-20 21:54:48.080868769 +0530
+@@ -1659,4 +1659,314 @@
  	return ret;
  }
  
@@ -1315,6 +1315,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +
 +    // Unmount partitions forcefully
 +    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
++	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/linux >/dev/null 2>&1 || true");
 +    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
 +
 +    Exec_Cmd("sync");
@@ -1350,7 +1351,7 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +    // Unmount common mount points and partitions
 +    Exec_Cmd("for i in sdcard data; do umount -lf /$i 2>/dev/null || true; done");
 +    Exec_Cmd("dmsetup remove -f userdata 2>/dev/null || true");
-+    Exec_Cmd("for i in esp win firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i > /dev/null 2>&1 || true; done");
++    Exec_Cmd("for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i > /dev/null 2>&1 || true; done");
 +}
 +
 +
@@ -1469,9 +1470,9 @@ diff -ruN /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-function
 +
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
-diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-06-18 23:59:50.214679298 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-06-24 23:39:42.211546406 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
+--- /bootable/recovery/twrp-functions.hpp	2025-07-17 14:42:09.176738993 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-07-20 20:29:21.795806826 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -1484,9 +1485,9 @@ diff -ruN /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-function
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
-diff -ruN /bootable/recovery/variables.h /bootable/recovery/variables.h
---- /bootable/recovery/variables.h	2025-06-18 23:59:50.218012551 +0530
-+++ /bootable/recovery/variables.h	2025-06-24 23:39:42.211546406 +0530
+diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
+--- /bootable/recovery/variables.h	2025-07-17 14:42:09.180118864 +0530
++++ /bootable/recovery/variables.h	2025-07-20 20:29:21.795993587 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
