@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-07-17 14:42:09.097402559 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-07-20 22:18:58.989504843 +0530
++++ /bootable/recovery/gui/action.cpp	2025-07-20 23:06:16.408670606 +0530
 @@ -209,6 +209,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -44,7 +44,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	return 0;
  }
  
-@@ -2365,3 +2375,289 @@
+@@ -2365,3 +2375,285 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -174,15 +174,11 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +        TWFunc::CommonByArKT();
 +        gui_print("Restoring partitions to stock...\n\n");
 +
-+        gui_print("Removing partitions...\n");
-+        TWFunc::Exec_Cmd("for i in $(seq 31 40); do parted -s /dev/block/sda rm $i 2>/dev/null || true; done");
++        gui_print("Making partitions stock...\n");
++        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
 +
-+        gui_print("Creating userdata(Android) partition...\n");
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart userdata ext4 10872MB 100%");
-+
-+        gui_print("Resizing partition table...\n");
-+        TWFunc::Exec_Cmd("sgdisk --resize-table 32 /dev/block/sda");
-+        TWFunc::Exec_Cmd("sync");
++        gui_print("resizing userdata(Android) partition...\n");
++        TWFunc::Exec_Cmd("parted -s /dev/block/sda resizepart 31 100%");
 +
 +        gui_print("Formatting userdata...\n");
 +        TWFunc::Exec_Cmd("make_f2fs -f -g android /dev/block/sda31");
