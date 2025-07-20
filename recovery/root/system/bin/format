@@ -1,12 +1,32 @@
 #!/sbin/bash
-set -e
-base=/dev/block/by-name
-if [ -e "$base/esp" ] && [ -e "$base/linux" ]; then
-	echo "nothing to format huh. check your partitions"
-	exit 1
+linpart=/dev/block/platform/soc/1d84000.ufshc/by-name/linux
+esppart=/dev/block/platform/soc/1d84000.ufshc/by-name/esp
+[ -e "$linpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
+target=$1
+#force unmount and suppress errors
+force_umount() {
+    umount -lf "$1" 2>/dev/null || true
+}
+#format ESP only
+if [ "$target" = "esp" ]; then
+    echo "Formatting ESP partition..."
+    force_umount "$esppart"
+    mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
+    echo "ESP format done!"
+    exit 0
 fi
-umount "$base/esp"
-umount "$base/linux"
-mkfs.fat -F32 -s1 "$base/esp" -n ESPNABU
-mke2fs -t ext4 -F "$base/linux"
-echo "done!"
+#format LIN only
+if [ "$target" = "lin" ]; then
+    echo "Formatting LINUX partition..."
+    force_umount "$linpart"
+    mke2fs -t ext4 -F "$linpart"
+    echo "LINUX format done!"
+    exit 0
+fi
+#normally format both
+echo "Formatting ESP and LINUX partitions..."
+force_umount "$esppart"
+force_umount "$linpart"
+mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
+mke2fs -t ext4 -F "$linpart"
+echo "Both partitions formatted successfully!"

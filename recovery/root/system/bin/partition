@@ -1,36 +1,61 @@
 #!/sbin/bash
-if [[ -n $1 ]]; then
-	. common
-	linmax=$(echo "($max - 11222 - 8000)/1000" | bc)
-	echo "min size is 30, max size is less then $linmax"
+. common
 
-	if ! [[ -z $2 && $1 =~ ^[0-9]{1,3}(\.[0-9])?$ && $(echo "30 < $1 && $1 < $linmax" | bc) == 1 ]]; then
-		echo "invalid argument!"
-		exit 1
-	fi
+RESERVED_START=11222
+RESERVED_END=7000
 
-	echo "$(echo "scale=2; $1*1000/1024" | bc)GiB of space will be given to the main linux parition"
-	linend=$(echo "$1*1000 + 11222" | bc)
-	echo "userdata will get $(echo "scale=2;($max-$linend)/1024" | bc)GiB of space"
-	echo -n "does that sound good (y/n)? "
-	read -r yn
-	[[ $yn =~ ^[Yy].*$ ]] || {
-		echo "rethink things carefully and, eventually, you'll come to a conclusion."
-		exit 1
-	}
+usable_mb=$((max - RESERVED_START - RESERVED_END))
+linmax=$((usable_mb / 1000))
+input="${1-}"
+size=$(echo "$input" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sed 's/gb$//;s/[^0-9.]//g')
+if [[ -z "$input" ]]; then
+    linend=$(((max + RESERVED_START) / 2))
 else
-	echo "Usage: parition [linux partition size in GiB]"
-	exit 1
+    if ! [[ "$size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "Invalid input. Please enter a number (e.g., 60GB)" >&2
+        exit 1
+    fi
+    size_int=$(echo "$size" | cut -d'.' -f1)
+    if (( size_int < 25 || size_int > linmax )); then
+        echo "Invalid size! Min: 25GB, Max: ${linmax}GB" >&2
+        exit 1
+    fi
+    linend=$(echo "$size * 1000" | bc)
+    linend=$(printf "%.0f" "$linend")
+    linend=$(( (linend + 1023) / 1024 * 1024 ))
+    linend=$((linend + RESERVED_START))
 fi
+linux_gb=$(echo "scale=2; ($linend - $RESERVED_START) / 1000" | bc)
+userdata_gb=$(echo "scale=2; ($max - $linend) / 1000" | bc)
+echo ""
+echo "Linux Partition: $linux_gb GB"
+echo "Android Partition: $userdata_gb GB"
+while true; do
+  echo ""
+  echo -n "Does this look good? (y/n): "
+  read yn
+  case "$yn" in
+    [Yy]* ) break ;;
+    [Nn]* ) echo "Operation cancelled"; exit 1 ;;
+    * ) echo "Please enter (yes/y/Y or no/n/N)." ;;
+  esac
+done
+echo ""
+echo "Proceeding with Linux partitioning..."
+echo ""
+disk=/dev/block/sda
+stockpart
+sgdisk --resize-table 64 "$disk"
+parted -s "$disk" \
+  rm 31 \
+  mkpart esp fat32 10872MB 11222MB \
+  mkpart linux ext4 11222MB "${linend}MB" \
+  mkpart userdata ext4 "${linend}MB" 100% \
+  set 31 esp on
 
-removeparts
-sgdisk --resize-table 64 /dev/block/sda
-parted -s /dev/block/sda \
-	mkpart esp fat32 10872MB 11222MB \
-	mkpart linux ext4 11222MB "$linend" \
-	mkpart userdata ext4 "$linend" 100% \
-	set 31 esp on
 sync
 formatlinuxesp
 formatdata
+sync
+parted "$disk" p free
 echo "done!"

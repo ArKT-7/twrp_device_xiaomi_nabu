@@ -1,4 +1,5 @@
 #!/sbin/bash
 . common
 restore
+parted /dev/block/sda p free
 echo "done!"
