@@ -207,7 +207,6 @@ twres/images/indeterminate001.png
 twres/images/indeterminate012.png
 twres/images/shift_terminal.png
 twres/images/shift.png
-twres/images/win.png
 twres/images/kb_arrow_up.png
 twres/images/slider_used.png
 twres/images/checkbox_true.png
@@ -3471,7 +3470,6 @@ system/bin/cal
 system/bin/file
 system/bin/truncate
 system/bin/rm
-system/bin/partition
 system/bin/nano_twrp-timestamp
 system/bin/e2fsck
 system/bin/bu
@@ -3500,7 +3498,6 @@ system/bin/ls
 system/bin/ozip_decrypt
 system/bin/env
 system/bin/taskset
-system/bin/panel
 system/bin/mkdir
 system/bin/more
 system/bin/fsck.ntfs
@@ -3509,7 +3506,6 @@ system/bin/uptime
 system/bin/zip
 system/bin/bash_twrp-timestamp
 system/bin/keystore_cli_v2
-system/bin/wimlib
 system/bin/keystore2
 system/bin/pwd
 system/bin/zcat
@@ -3518,7 +3514,6 @@ system/bin/realpath
 system/bin/tee
 system/bin/ifconfig
 system/bin/timeout
-system/bin/format
 system/bin/fsck.exfat
 system/bin/ulimit
 system/bin/test
@@ -3543,11 +3538,9 @@ system/bin/flock
 system/bin/zipinfo
 system/bin/sed
 system/bin/id
-system/bin/msc
 system/bin/avbctl
 system/bin/chcon
 system/bin/dos2unix
-system/bin/common
 system/bin/echo
 system/bin/hwclock
 system/bin/hwservicemanager
@@ -3563,10 +3556,8 @@ system/bin/simg2img
 system/bin/exfat-fuse
 system/bin/getenforce
 system/bin/sleep
-system/bin/fixgpt
 system/bin/printf
 system/bin/top
-system/bin/dmsetup
 system/bin/stat
 system/bin/rmmod
 system/bin/mount
@@ -3593,7 +3584,6 @@ system/bin/minadbd
 system/bin/chattr
 system/bin/du
 system/bin/android.hardware.keymaster@4.1-service-qti
-system/bin/stock_gpt
 system/bin/log
 system/bin/tzdata_twrp-timestamp
 system/bin/touch
@@ -3615,7 +3605,6 @@ system/bin/overrideprops.sh
 system/bin/modprobe
 system/bin/mknod
 system/bin/privapp-permissions-twrpapp.xml
-system/bin/formatdata
 system/bin/bash
 system/bin/tar
 system/bin/swapon
@@ -3625,14 +3614,12 @@ system/bin/diff
 system/bin/wc
 system/bin/linker_asan64
 system/bin/kill
-system/bin/sgdisk
 system/bin/chrt
 system/bin/whoami
 system/bin/android.hardware.health@2.1-service
 system/bin/erase_image
 system/bin/getevent
 system/bin/cmp
-system/bin/gdisk
 system/bin/strings
 system/bin/sha512sum
 system/bin/fmt
@@ -3645,11 +3632,9 @@ system/bin/uname
 system/bin/uniq
 system/bin/fgrep
 system/bin/ziptool
-system/bin/ntfsfix
 system/bin/xargs
 system/bin/fsck.f2fs
 system/bin/sha256sum
-system/bin/restore
 system/bin/iconv
 system/bin/mke2fs
 system/bin/magiskboot
@@ -3658,7 +3643,6 @@ system/bin/stty
 system/bin/servicemanager
 system/bin/losetup
 system/bin/readlink
-system/bin/ntfsresize
 system/bin/rmdir
 system/bin/gzip
 system/bin/vold_prepare_subdirs
@@ -3681,7 +3665,6 @@ system/bin/paste
 system/bin/toybox
 system/bin/adbd
 system/bin/nproc
-system/bin/parted
 system/bin/patch
 system/bin/setprop
 system/bin/gunzip

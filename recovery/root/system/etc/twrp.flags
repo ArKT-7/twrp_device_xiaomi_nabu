@@ -24,8 +24,6 @@
 /efsg          emmc    /dev/block/bootdevice/by-name/fsg                         flags=backup=1;subpartitionof=/efs1
 /persist       ext4    /dev/block/bootdevice/by-name/persist                     flags=display="persist"
 /persist_image emmc    /dev/block/bootdevice/by-name/persist                     flags=display="persist";flashimg=1
-/win           ntfs   /dev/block/bootdevice/by-name/win                          flags=display="Windows";storage
-/esp           vfat   /dev/block/bootdevice/by-name/esp                          flags=fsflags=utf8;display="ESP";storage
 
 # Removable storage
 /usbstorage    auto    /dev/block/sdg1                    /dev/block/sdg         flags=fsflags=utf8;display="USB Storage";storage;wipeingui;removable

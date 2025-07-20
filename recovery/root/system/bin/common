@@ -1,50 +1,167 @@
 #!/sbin/bash
-win=/dev/block/platform/soc/1d84000.ufshc/sda32
-esp=/dev/block/platform/soc/1d84000.ufshc/sda31
-
-stockpart(){
-sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda
+set -e
+[ -v SCRIPTS_DEBUG ] && set -x
+base=/dev/block/by-name
+linux=/dev/block/sda32
+esp=/dev/block/sda31
+userdata=/dev/block/sda33
+metadata=/dev/block/sda19
+removeparts() {
+	for i in $(seq 31 40); do
+		if [ -e "/dev/block/sda$i" ]; then
+			parted -s /dev/block/sda rm "$i" 2>/dev/null
+		fi
+	done
 }
 
-formatwinesp(){
-mkfs.fat -F32 -s1 $esp -n ESPNABU
-mkfs.ntfs -f $win -L WINNABU
+formatlinuxesp() {
+	mkfs.fat -F32 -s1 "$esp" -n ESPNABU
+	mke2fs -t ext4 -F "$linux"
 }
 
-formatdata(){
-make_f2fs -f -g android /dev/block/sda31
-mke2fs -t ext4 -F /dev/block/sda19
+formatdata() {
+	if [ -e "$base/userdata" ]; then
+		make_f2fs -f -g android "$base/userdata"
+	else
+		make_f2fs -f -g android "$userdata"
+	fi
+	if [ -e "$base/metadata" ]; then
+		mke2fs -t ext4 -F "$base/metadata"
+	else
+		mke2fs -t ext4 -F "$metadata"
+	fi
 }
 
-formatwindata(){
-make_f2fs -f -g android /dev/block/sda33
-mke2fs -t ext4 -F /dev/block/sda19
+formatdatarestore() {
+	if [ -e "$base/userdata" ]; then
+		make_f2fs -f -g android "$base/userdata"
+	else
+		make_f2fs -f -g android "/dev/block/sda31"
+	fi
+	if [ -e "$base/metadata" ]; then
+		mke2fs -t ext4 -F "$base/metadata"
+	else
+		mke2fs -t ext4 -F "$metadata"
+	fi
 }
 
-restore(){
-stockpart
-parted -s /dev/block/sda resizepart 31 100%
-sync
-formatdata
+restore() {
+	removeparts
+	parted -s /dev/block/sda mkpart userdata ext4 10872MB 100%
+	sgdisk --resize-table 32 /dev/block/sda
+	sync
+	formatdatarestore
 }
 
-fixgpt() {
-  for dev in /dev/block/sd{a..f}; do gdisk "$dev" <<< $'x\nj\n\nk\n\nw\nY\n'; done
+umountm() {
+	local part
+	local args
+	local real_part
+	part="${1:-}"
+	args=()
+	if [ -n "$part" ]; then
+		if [ $# -gt 0 ]; then
+			shift
+			args=("$@")
+		fi
+		if [ -L "$part" ]; then
+			real_part=$(readlink -f "$part")
+		else
+			real_part="$part"
+		fi
+		if grep -q "$real_part" /proc/mounts; then
+			umount "$part" "${args[@]}"
+		fi
+	fi
 }
 
-[ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ] && echo "msc is enabled! aborting..." && echo "reboot and run the script again." && exit 1
+attach_chroot() {
+	mkdir /mnt/linux/root -p
+	mount /dev/block/by-name/linux /mnt/linux/root
+	mount /dev/block/by-name/esp /mnt/linux/root/boot/efi
+	mount -t proc proc /mnt/linux/root/proc
+	mount -t sysfs sysfs /mnt/linux/root/sys
+	mount -o bind /dev /mnt/linux/root/dev
+	mount -o bind /dev/pts /mnt/linux/root/dev/pts
+}
 
-if getprop sys.usb.config | grep -q "mtp"; then
-    echo " "
-    echo "run the script again!"
-    sleep 1
-    setprop sys.usb.config adb
-    rm /config/usb_gadget/g1/configs/b.1/f*
-    exit
+detach_chroot() {
+	umountm /mnt/linux/root/dev/pts
+	umountm /mnt/linux/root/dev
+	umountm /mnt/linux/root/sys
+	umountm /mnt/linux/root/proc
+	umountm /mnt/linux/root/boot/efi
+	umountm /mnt/linux/root
+}
+
+if [ "${ignoreweirdness:-}" != true ]; then
+	for i in 1 2 3 4; do
+		if [ ! -e /dev/block/platform/soc/1d84000.ufshc/by-name/bk0$i ]; then
+			echo "this script will NOT work with weird partition layouts! please restore the partition table by flashing gpt_both0 in fastboot!"
+			exit 1
+		fi
+	done
 fi
 
-max=$(( $(blockdev --getsize64 /dev/block/sda) / 1000000 ))
+if [ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ]; then
+	echo "msc is enabled! aborting..."
+	echo "reboot and run the script again."
+	exit 1
+fi
 
-for i in sdcard data; do umount -lf /$i 2>/dev/null; done
-dmsetup remove -f userdata 2>/dev/null
-for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done
+if getprop sys.usb.config | grep -q "mtp"; then
+	echo "run the script again!"
+	sleep 1
+	setprop sys.usb.config adb
+	rm /config/usb_gadget/g1/configs/b.1/f*
+	exit
+fi
+
+blocksize=$(blockdev --getsize64 /dev/block/sda)
+if [[ $blocksize =~ ^125[0-9]{9}$ ]]; then
+	max=125586
+elif [[ $blocksize =~ ^253[0-9]{9}$ ]]; then
+	max=253546
+elif [[ $blocksize =~ ^509[0-9]{9}$ ]]; then
+	max=509465
+elif [[ $blocksize =~ ^1021[0-9]{9}$ ]]; then
+	max=1021329
+else
+	echo "is this nabu?"
+	exit 1
+fi
+export max
+
+for i in sdcard data; do
+	if mountpoint -q /$i; then
+		twrp unmount /$i >/dev/null 2>&1
+	fi
+done
+
+for i in esp win firmware mnt userdata metadata misc vendor linux; do
+	umountm "$base/$i" 2>/dev/null
+done
+if dmsetup status | grep userdata -q; then
+	dmsetup remove userdata 2>/dev/null
+fi
+
+detach_chroot
+
+if [ "${ignoreweirdness:-}" != true ]; then
+
+	if weirdparts=$(find /dev/block -type b | grep -E '/sda(3[4-9]|[4-9][0-9])$'); then
+		echo -n "In order to use this script, your partition table has to be restored to the stock variant. ALL DATA WILL BE LOST. Continue (y/n)? "
+		read -r yn
+		[[ $yn =~ ^[Yy].*$ ]] || {
+			echo "Can't proceed without restoring the table."
+			exit 1
+		}
+		echo "Restoring the stock partition layout now..."
+		for i in $weirdparts; do
+			f="${i:14}"
+			parted -s /dev/block/sda rm "$f" 2>/dev/null
+		done
+		restore
+		exit 0
+	fi
+fi

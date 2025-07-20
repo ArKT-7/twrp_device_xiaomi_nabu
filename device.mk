@@ -104,7 +104,7 @@ PRODUCT_SOONG_NAMESPACES += \
 #RECOVERY_TOUCHSCREEN_FLIP_Y := true
 # ==================================================
 TW_THEME := portrait_hdpi
-TW_DEVICE_VERSION := 4 Mod Recovery For Windows by ArKT
+TW_DEVICE_VERSION := 4 Mod Recovery for Linux by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true
@@ -116,7 +116,7 @@ TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_REPACKTOOLS := true
 TW_INPUT_BLACKLIST := "hbtp_vm"
 TW_BRIGHTNESS_PATH := "/sys/class/backlight/panel0-backlight/brightness"
-TW_DEFAULT_BRIGHTNESS := 869
+TW_DEFAULT_BRIGHTNESS := 1500
 TW_INCLUDE_LIBRESETPROP := true
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_EXCLUDE_TWRPAPP := true

@@ -1,0 +1,21 @@
+#!/sbin/bash
+ignoreweirdness=true
+. common
+
+cmd="${1:-}"
+args=()
+if [ -z "$cmd" ]; then
+	cmd="/bin/bash"
+fi
+if [ $# -gt 0 ]; then
+	shift
+	args=("$@")
+fi
+
+attach_chroot
+# Fix PATH
+export PATH="$PATH:/usr/bin:/usr/local/bin:/bin:/sbin"
+chroot /mnt/linux/root "$cmd" "${args[@]}" || exit_code="$?"
+echo "Child process exited with code ${exit_code:-0}"
+
+detach_chroot

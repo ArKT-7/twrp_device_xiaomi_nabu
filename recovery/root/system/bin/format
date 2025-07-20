@@ -1,32 +1,12 @@
 #!/sbin/bash
-winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
-esppart=/dev/block/platform/soc/1d84000.ufshc/by-name/esp
-[ -e "$winpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
-target=$1
-#force unmount and suppress errors
-force_umount() {
-    umount -lf "$1" 2>/dev/null || true
-}
-#format ESP only
-if [ "$target" = "esp" ]; then
-    echo "Formatting ESP partition..."
-    force_umount "$esppart"
-    mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
-    echo "ESP format done!"
-    exit 0
+set -e
+base=/dev/block/by-name
+if [ -e "$base/esp" ] && [ -e "$base/linux" ]; then
+	echo "nothing to format huh. check your partitions"
+	exit 1
 fi
-#format WIN only
-if [ "$target" = "win" ]; then
-    echo "Formatting WIN partition..."
-    force_umount "$winpart"
-    mkfs.ntfs -f "$winpart" -L WINNABU
-    echo "WIN format done!"
-    exit 0
-fi
-#normally format both
-echo "Formatting ESP and WIN partitions..."
-force_umount "$esppart"
-force_umount "$winpart"
-mkfs.fat -F32 -s1 "$esppart" -n ESPNABU
-mkfs.ntfs -f "$winpart" -L WINNABU
-echo "Both partitions formatted successfully!"
+umount "$base/esp"
+umount "$base/linux"
+mkfs.fat -F32 -s1 "$base/esp" -n ESPNABU
+mke2fs -t ext4 -F "$base/linux"
+echo "done!"
