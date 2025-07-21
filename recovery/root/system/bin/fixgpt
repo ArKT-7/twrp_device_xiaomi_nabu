@@ -1,4 +1,0 @@
-#!/sbin/bash
-. common
-fixgpt
-echo "done!"

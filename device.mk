@@ -104,7 +104,7 @@ PRODUCT_SOONG_NAMESPACES += \
 #RECOVERY_TOUCHSCREEN_FLIP_Y := true
 # ==================================================
 TW_THEME := portrait_hdpi
-TW_DEVICE_VERSION := 4 Mod Recovery For Windows by ArKT
+TW_DEVICE_VERSION := 4 Mod Recovery by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true

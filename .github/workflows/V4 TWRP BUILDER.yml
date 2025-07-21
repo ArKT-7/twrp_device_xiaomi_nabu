@@ -2,7 +2,7 @@ name: V4-MODDED TWRP BUILD
 
 on:
   push:
-    branches: [ "mod-windows" ]
+    branches: [ "mod-normal" ]
 
   workflow_dispatch:
   
@@ -12,7 +12,7 @@ env:
   MANIFEST_BRANCH: twrp-12.1
 
   DEVICE_TREE_URL: https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git
-  DEVICE_TREE_BRANCH: mod-windows
+  DEVICE_TREE_BRANCH: mod-normal
   DEVICE_PATH: device/xiaomi/nabu
 
   KERNEL_URL: https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git
@@ -106,7 +106,7 @@ jobs:
     - name: Prepare Upload
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
-        IMG=V4-MODDED-TWRP-WINDOWS-$(date +'%d-%m').img
+        IMG=V4-MODDED-TWRP-NORMAL-$(date +'%d-%m').img
         TEST_IMG=TEST_$IMG
         ARTIFACT_NAME=UNZIP_IT-${IMG%.img}
         mv "$OUT/boot.img" "$OUT/$IMG"
@@ -118,7 +118,7 @@ jobs:
     - name: Upload V4 TWRP to Release with TEST as prefix
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: mod-win
+        tag_name: mod_normal
         files: arkt/out/target/product/${{ env.DEVICE_NAME }}/${{ env.test_img_name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

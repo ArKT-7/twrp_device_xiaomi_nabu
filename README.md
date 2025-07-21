@@ -1,5 +1,5 @@
-# TWRP/ Modded TWRP for WOA for Xiaomi Pad 5 (Nabu)
-## [Download Latest V4 Modded Recovery Here](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/releases/tag/mod-win)
+# Modded TWRP for Xiaomi Pad 5 (Nabu)
+## [Download Latest V4 Modded Recovery Here](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/releases/tag/mod_normal)
 ---
 
 ## 🔁 Automated Builds via [GitHub Actions](https://github.com/ArKT-7/twrp_device_xiaomi_nabu/actions)
@@ -73,7 +73,7 @@ repo sync -j$(nproc --all) --force-sync
 ##### Now, clone the TWRP mod device tree for the Xiaomi Pad 5 (Nabu) and kernel:
 
 ```bash
-git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod-windows device/xiaomi/nabu
+git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod-normal device/xiaomi/nabu
 git clone --depth=1 https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git -b 14.0 kernel/xiaomi/nabu
 ```
 

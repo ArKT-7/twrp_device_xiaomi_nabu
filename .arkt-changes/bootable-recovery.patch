@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-07-17 14:42:09.087906925 +0530
-+++ /bootable/recovery/data.cpp	2025-07-20 20:29:21.792122872 +0530
++++ /bootable/recovery/data.cpp	2025-07-21 13:34:01.587450156 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,111 +12,21 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-07-17 14:42:09.097402559 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-07-20 23:06:16.408670606 +0530
-@@ -209,6 +209,14 @@
++++ /bootable/recovery/gui/action.cpp	2025-07-21 13:34:01.588363676 +0530
+@@ -209,6 +209,7 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
 +		ADD_ACTION(rotationbyarkt);
-+		ADD_ACTION(mscbyarkt);
-+		ADD_ACTION(formatbyarkt);
-+		ADD_ACTION(printpartitionsbyarkt);
-+		ADD_ACTION(rebootbyarkt);
-+		ADD_ACTION(restorebyarkt);
-+		ADD_ACTION(partitionaskbyarkt);
-+		ADD_ACTION(partitionByArKT);
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -593,6 +601,7 @@
- 	// to prevent crashing which could occur when we start deleting
- 	// GUI resources in the action thread while we attempt to render
- 	// with those same resources in another thread.
-+	TWFunc::PartitionSizesByArKT();
- 	return 0;
- }
- 
-@@ -668,6 +677,7 @@
- 		PartitionManager.Mount_Current_Storage(true);
- 	}
- 	operation_end(0);
-+	TWFunc::PartitionSizesByArKT();
- 	return 0;
- }
- 
-@@ -2365,3 +2375,285 @@
+@@ -2365,3 +2366,20 @@
  	operation_end(op_status);
  	return 0;
  }
 +
 +// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
-+
-+// Enable Mass Storage mode over USB (MSC)
-+int GUIAction::mscbyarkt(std::string arg)
-+{
-+    // If called with "pass", and MSC already enabled, just update UI
-+    if (arg == "pass") {
-+        if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+            gui_changeOverlay("slideout"); // Show overlay immediately
-+            gui_print("re-enabling MSC again\n");
-+        }
-+    }
-+    // If MSC already enabled, notify and show appropriate overlay
-+    else if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+        gui_print("\nMass storage is already enabled!\n");
-+        gui_changeOverlay("msc_enabled");
-+        return 1;
-+    }
-+
-+    gui_changeOverlay("slideout");
-+    TWFunc::Exec_Cmd("sync");
-+
-+    // Run enabling MSC asynchronously to avoid blocking UI
-+    std::thread([] {
-+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+
-+        TWFunc::CommonByArKT();
-+        gui_print("Enabling Mass Storage...\n");
-+
-+        // Set USB gadget parameters for MSC mode and link mass_storage function
-+        std::string bash_script = R"(
-+            setenforce 0;
-+            echo 0x2717 > /config/usb_gadget/g1/idVendor;
-+            echo 0x9039 > /config/usb_gadget/g1/idProduct;
-+            echo 0xEF > /config/usb_gadget/g1/bDeviceClass;
-+            echo 0x02 > /config/usb_gadget/g1/bDeviceSubClass;
-+            echo 0x01 > /config/usb_gadget/g1/bDeviceProtocol;
-+            ln -s /config/usb_gadget/g1/functions/mass_storage.0 /config/usb_gadget/g1/configs/b.1/ 2>/dev/null;
-+            echo /dev/block/sda > /config/usb_gadget/g1/configs/b.1/mass_storage.0/lun.0/file;
-+            echo 0 > /config/usb_gadget/g1/configs/b.1/mass_storage.0/lun.0/removable;
-+            echo '' > /config/usb_gadget/g1/UDC 2>/dev/null;
-+            echo a600000.dwc3 > /config/usb_gadget/g1/UDC 2>/dev/null;
-+        )";
-+
-+        TWFunc::Exec_Cmd(("sh -c '" + bash_script + "'").c_str());
-+        gui_print("\nDone!\n");
-+    }).detach();
-+
-+    sync();
-+    return 0;
-+}
-+
-+// Format Windows partition (calls helper)
-+int GUIAction::formatbyarkt(std::string arg __unused)
-+{
-+    gui_changeOverlay("slideout");
-+    sync();
-+    TWFunc::FormatByArKT();
-+    return 0;
-+}
-+
-+// Print partition info
-+int GUIAction::printpartitionsbyarkt(std::string arg __unused)
-+{
-+    gui_changeOverlay("slideout");
-+    TWFunc::partedprintByArKT();
-+    return 0;
-+}
 +
 +// Show rotation warning UI, perform rotation logic
 +int GUIAction::rotationbyarkt(std::string arg __unused)
@@ -132,219 +42,14 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    sync();
 +    return 0;
 +}
-+
-+// Reboot device with different options based on arg
-+int GUIAction::rebootbyarkt(std::string arg)
-+{
-+    if (arg == "r") {
-+        TWFunc::Exec_Cmd("reboot >/dev/null 2>&1 || true");
-+    } else if (arg == "rtbl") {
-+        TWFunc::Exec_Cmd("reboot bootloader >/dev/null 2>&1 || true");
-+    } else if (arg == "rtr") {
-+        TWFunc::Exec_Cmd("reboot recovery >/dev/null 2>&1 || true");
-+    } else if (arg == "off") {
-+        TWFunc::Exec_Cmd("reboot poweroff >/dev/null 2>&1 || true");
-+    }
-+    return 0;
-+}
-+
-+// Restore stock partitions after confirmation ("pass" arg)
-+int GUIAction::restorebyarkt(std::string arg __unused)
-+{
-+    // Prevent restore if mass storage enabled
-+    if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+        gui_print("\nMass storage is already enabled!\n");
-+        gui_changeOverlay("msc_enabled_warn");
-+        return 1;
-+    }
-+
-+    // Show confirmation overlay if not confirmed yet
-+    if (arg != "pass") {
-+        gui_changeOverlay("restore_warn");
-+        return 0;
-+    }
-+
-+    gui_changeOverlay("slideout");
-+    sync();
-+
-+    // Run restore steps asynchronously to avoid blocking UI
-+    std::thread([] {
-+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+
-+        TWFunc::CommonByArKT();
-+        gui_print("Restoring partitions to stock...\n\n");
-+
-+        gui_print("Making partitions stock...\n");
-+        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
-+
-+        gui_print("resizing userdata(Android) partition...\n");
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda resizepart 31 100%");
-+
-+        gui_print("Formatting userdata...\n");
-+        TWFunc::Exec_Cmd("make_f2fs -f -g android /dev/block/sda31");
-+
-+        gui_print("Formatting metadata...\n");
-+        TWFunc::Exec_Cmd("mke2fs -t ext4 -F /dev/block/sda19");
-+
-+        TWFunc::partedprintByArKT();
-+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
-+        TWFunc::PartitionSizesByArKT();
-+    }).detach();
-+
-+    sync();
-+    return 0;
-+}
-+
-+// Show UI to ask user for Windows partition size, validate input
-+int GUIAction::partitionaskbyarkt(std::string arg __unused)
-+{
-+    // Prevent partitioning if mass storage enabled
-+    if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
-+        gui_print("\nMass storage is already enabled!\n");
-+        gui_changeOverlay("msc_enabled_warn");
-+        return 1;
-+    }
-+
-+    // Show partition ask overlay if not confirmed
-+    if (arg != "pass") {
-+        gui_changeOverlay("partition_ask");
-+        return 0;
-+    }
-+
-+    TWFunc::PartitionSizesByArKT();
-+
-+    // Constants for reserved partitions for userdata and systems in MB
-+    const int RESERVED_END   = 7000;
-+    const int RESERVED_START = 11222;
-+
-+    std::string value;
-+    DataManager::GetValue(ARKT_PART_SIZE, value);
-+
-+    std::string total_mb_str;
-+    DataManager::GetValue("arkt_blockpart_size", total_mb_str);
-+
-+    if (total_mb_str.empty()) {
-+        gui_changeOverlay("slideout");
-+        gui_print("Error: Unable to retrieve usable block size!\n");
-+        return 1;
-+    }
-+
-+    long long total_usable_mb = std::stoll(total_mb_str);
-+    double win_max = total_usable_mb / 1000.0;
-+    double win_gb = std::stod(value);
-+
-+    // Validate partition size input is within allowed range
-+    if (win_gb < 25.0 || win_gb > win_max) {
-+        gui_changeOverlay("partition_warn");
-+        return 1;
-+    }
-+
-+    // Align Windows partition end to 1MB boundary
-+    long long win_end_mb = static_cast<long long>(win_gb * 1000.0);
-+    win_end_mb = ((win_end_mb + 1023) / 1024) * 1024;
-+    win_gb = static_cast<double>(win_end_mb) / 1000.0;
-+
-+    double userdata_mb = static_cast<double>(total_usable_mb) - win_end_mb + RESERVED_END;
-+    double userdata_gb = userdata_mb / 1000.0;
-+
-+    LOGINFO("Windows Partition: %.2f GB\n", win_gb);
-+    LOGINFO("Android Partition: %.2f GB\n", userdata_gb);
-+
-+    char win_str[16], user_str[16];
-+    snprintf(win_str, sizeof(win_str), "%.2f", win_gb);
-+    snprintf(user_str, sizeof(user_str), "%.2f", userdata_gb);
-+
-+    // Store partition sizes for later steps
-+    DataManager::SetValue("win_part_size", std::string(win_str));
-+    DataManager::SetValue("userdata_part_size", std::string(user_str));
-+    DataManager::SetValue("win_end_size", static_cast<int>(win_end_mb + RESERVED_START));
-+
-+    gui_changeOverlay("partition_confirm");
-+    return 0;
-+}
-+
-+// Perform partitioning of device with Windows, Esp and Android partitions
-+int GUIAction::partitionByArKT(std::string arg __unused)
-+{
-+    gui_changeOverlay("slideout");
-+    gui_print("\nProceeding with Windows partitioning!\n");
-+    sync();
-+
-+    // Run partitioning asynchronously
-+    std::thread([] {
-+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+        TWFunc::CommonByArKT();
-+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-+
-+        unsigned long long winend;
-+        DataManager::GetValue("win_end_size", winend);
-+
-+        gui_print("Making partitions stock...\n");
-+        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
-+
-+        gui_print("Resizing partition table...\n");
-+        TWFunc::Exec_Cmd("sgdisk --resize-table 64 /dev/block/sda");
-+
-+        gui_print("Creating partitions...\n");
-+		TWFunc::Exec_Cmd("parted -s /dev/block/sda rm 31");
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart esp fat32 10872MB 11222MB");
-+
-+        std::string win_end_str = std::to_string(winend) + "MB";
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart win ntfs 11222MB " + win_end_str);
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart userdata ext4 " + win_end_str + " 100%");
-+        TWFunc::Exec_Cmd("parted -s /dev/block/sda set 31 esp on");
-+
-+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-+        TWFunc::Exec_Cmd("sync");
-+
-+        gui_print("Formatting userdata(Android)...\n");
-+        TWFunc::Exec_Cmd("make_f2fs -f -g android /dev/block/sda33");
-+
-+        gui_print("Formatting metadata...\n");
-+        TWFunc::Exec_Cmd("mke2fs -t ext4 -F /dev/block/sda19");
-+        sync();
-+
-+        gui_print("Formatting ESP Partition...\n");
-+        TWFunc::Exec_Cmd("mkfs.fat -F32 -s1 /dev/block/sda31 -n ESPNABU");
-+
-+        gui_print("Formatting Windows Partition...\n");
-+        TWFunc::Exec_Cmd("mkfs.ntfs -f /dev/block/sda32 -L WINNABU");
-+        sync();
-+
-+        // Fix GPT for 24h2 windows edl brick
-+        for (char suffix = 'a'; suffix <= 'f'; ++suffix) {
-+            std::string device = "/dev/block/sd";
-+            device += suffix;
-+
-+            gui_print("Fixing GPT on %s...\n", device.c_str());
-+            TWFunc::Exec_Cmd(
-+                "echo -e \"x\\nj\\n\\nk\\n\\nw\\nY\\n\" | gdisk " + device
-+            );
-+        }
-+
-+        TWFunc::partedprintByArKT();
-+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
-+        TWFunc::PartitionSizesByArKT();
-+    }).detach();
-+
-+    sync();
-+    return 0;
-+}
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-07-17 14:42:09.098091657 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-07-20 20:29:21.794089292 +0530
-@@ -334,6 +334,14 @@
++++ /bootable/recovery/gui/objects.hpp	2025-07-21 13:34:01.589088006 +0530
+@@ -334,6 +334,7 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
 +	int rotationbyarkt(std:: string arg);
-+	int mscbyarkt(std:: string arg);
-+	int formatbyarkt(std:: string arg);
-+	int printpartitionsbyarkt(std:: string arg);
-+	int rebootbyarkt(std:: string arg);
-+	int restorebyarkt(std:: string arg);
-+	int partitionaskbyarkt(std:: string arg);
-+	int partitionByArKT(std:: string arg);
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
@@ -1129,17 +834,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/theme/extra-languages/language
 -</language>
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp.cpp	2025-07-20 20:29:21.795029470 +0530
-@@ -475,6 +475,8 @@
- 	// Create a thread for battery monitoring
- 	static std::thread battery_monitor(monitorBatteryInBackground);
- 
-+	TWFunc::PartitionSizesByArKT();
-+
- 	twrpAdbBuFifo *adb_bu_fifo = new twrpAdbBuFifo();
- 	TWFunc::Clear_Bootloader_Message();
- 
-@@ -491,7 +493,7 @@
++++ /bootable/recovery/twrp.cpp	2025-07-21 13:34:01.590876796 +0530
+@@ -491,7 +491,7 @@
  	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
  	GUIConsole::Translate_Now();
  
@@ -1150,97 +846,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-07-17 14:42:09.176566325 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-07-20 21:54:48.080868769 +0530
-@@ -1659,4 +1659,314 @@
++++ /bootable/recovery/twrp-functions.cpp	2025-07-21 13:35:12.060886842 +0530
+@@ -1659,4 +1659,91 @@
  	return ret;
  }
  
 +// Functions By ArKT , telegram - @ArKT_7, Github - https://github.com/ArKT-7
-+
-+void TWFunc::PartitionSizesByArKT() 
-+{
-+    std::string block_raw, win_raw, esp_raw, userdata_raw;
-+    std::string block_val = "NA", block_unit = "MB", block_display = "NA";
-+    std::string win_val = "NA", win_unit = "MB", win_display = "NA";
-+    std::string esp_val = "NA", esp_unit = "MB", esp_display = "NA";
-+    std::string userdata_val = "NA", userdata_unit = "MB", userdata_display = "NA";
-+
-+    const int RESERVED_START = 11222;
-+    const int RESERVED_END   = 7000;
-+
-+    // Helper lambda to clean float string (remove trailing zeros)
-+    auto clean_float_str = [](float value) -> std::string {
-+        std::ostringstream oss;
-+        oss.precision(2);
-+        oss << std::fixed << value;
-+        std::string out = oss.str();
-+        while (out.back() == '0') out.pop_back();
-+        if (out.back() == '.') out.pop_back();
-+        return out;
-+    };
-+
-+    // Get block total size (adjusted for reserved space)
-+    if (Exec_Cmd("blockdev --getsize64 /dev/block/sda | awk '{print int($1 / 1000000)}'", block_raw, true) == 0) {
-+        block_raw.erase(std::remove(block_raw.begin(), block_raw.end(), '\n'), block_raw.end());
-+
-+        if (!block_raw.empty()) {
-+            long long max = std::stoll(block_raw);
-+            long long usable_mb = max - RESERVED_START - RESERVED_END;
-+            long long winmax = usable_mb / 1000;
-+
-+            block_val = std::to_string(usable_mb);
-+            block_display = std::to_string(winmax);
-+        }
-+    }
-+
-+    DataManager::SetValue("arkt_blockpart_size", block_val);
-+    DataManager::SetValue("arkt_blockpart_display", block_display);
-+
-+    if (block_val != "NA")
-+        LOGINFO("BLOCK Partition Aligned Size: %s MB, Display: %s GB\n", block_val.c_str(), block_display.c_str());
-+
-+    // Lambda to parse partition size and set related values
-+    auto ParsePartitionSize = [&](const std::string& part_name, std::string& out_raw,
-+                                  std::string& out_val, std::string& out_unit, std::string& out_display,
-+                                  const std::string& arkt_key) {
-+        std::string cmd = "parted /dev/block/sda unit MB print | awk -v name=\"" + part_name + "\" "
-+                  "'$0 ~ /^[ 0-9]+/ { name_col=0; for(i=1;i<=NF;i++) if($i==name) name_col=i; "
-+                  "if(name_col > 0 && $(name_col)==name) { gsub(\"MB\", \"\", $4); print $4 } }'";
-+        
-+        if (Exec_Cmd(cmd, out_raw, true) == 0) {
-+            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), '\n'), out_raw.end());
-+            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), ' '), out_raw.end());
-+
-+            if (!out_raw.empty()) {
-+                float mb = std::stof(out_raw);
-+                if (mb >= 1000.0f) {
-+                    out_val = clean_float_str(mb / 1000.0f);
-+                    out_unit = "GB";
-+                } else {
-+                    out_val = out_raw;
-+                    out_unit = "MB";
-+                }
-+            }
-+        }
-+
-+        if (out_val == "NA") out_unit = "";
-+
-+        out_display = (out_val == "NA") ? "NA" : out_val + " " + out_unit;
-+
-+        DataManager::SetValue("arkt_" + arkt_key + "part_size", out_val);
-+        DataManager::SetValue("arkt_" + arkt_key + "part_unit", out_unit);
-+        DataManager::SetValue("arkt_" + arkt_key + "part_display", out_display);
-+
-+        if (out_val != "NA")
-+            LOGINFO("%s Partition Size: %s\n", arkt_key.c_str(), out_display.c_str());
-+    };
-+
-+    // Parse each partition safely
-+    ParsePartitionSize("win", win_raw, win_val, win_unit, win_display, "win");
-+    ParsePartitionSize("esp", esp_raw, esp_val, esp_unit, esp_display, "esp");
-+    ParsePartitionSize("userdata", userdata_raw, userdata_val, userdata_unit, userdata_display, "userdata");
-+}
-+
 +
 +void TWFunc::RotationByArkt() 
 +{
@@ -1282,7 +893,6 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    Exec_Cmd("mv /twres/twres-arkt/images/splashteamwin.png /twres/images/");
 +    Exec_Cmd("mv /twres/twres-arkt/images/enter_terminal.png /twres/images/");
 +    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/win.png /twres/images/");
 +    Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width_low.png /twres/images/");
 +    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal_fill.png /twres/images/");
 +    Exec_Cmd("mv /twres/twres-arkt/images/splashlogo.png /twres/images/");
@@ -1311,7 +921,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +    // Unmount partitions forcefully
 +    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
-+	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/linux >/dev/null 2>&1 || true");
++    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/linux >/dev/null 2>&1 || true");
 +    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
 +
 +    Exec_Cmd("sync");
@@ -1328,162 +938,21 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
 +}
 +
-+
-+void TWFunc::CommonByArKT() 
-+{
-+    // Check if MTP mode is active, then reset USB to ADB mode
-+    int mtpActive = system("getprop sys.usb.config | grep -q 'mtp'");
-+    if (mtpActive == 0) {
-+        gui_print("\nMTP mode detected. Resetting USB to ADB...\n");
-+        PartitionManager.Disable_MTP();
-+        android::base::SetProperty("sys.usb.config", "none");
-+        android::base::SetProperty("sys.usb.config", "adb");
-+        Exec_Cmd("rm -f /config/usb_gadget/g1/configs/b.1/f* || true");
-+        ::sleep(2);
-+    }
-+
-+    gui_print("\nUnmounting all related partitions...\n");
-+
-+    // Unmount common mount points and partitions
-+    Exec_Cmd("for i in sdcard data; do umount -lf /$i 2>/dev/null || true; done");
-+    Exec_Cmd("dmsetup remove -f userdata 2>/dev/null || true");
-+    Exec_Cmd("for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i > /dev/null 2>&1 || true; done");
-+}
-+
-+
-+void TWFunc::partedprintByArKT() 
-+{
-+    gui_print("\nFetching partition list...\n\n");
-+
-+    // Run parted asynchronously to get and print partition info
-+    std::thread([] {
-+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-+        std::string parted_output;
-+        int code = Exec_Cmd("parted /dev/block/sda p free", parted_output, true);
-+
-+        if (code != 0 || parted_output.empty()) {
-+            gui_print("Failed to get partition list.\n");
-+            gui_print("%s\n", parted_output.c_str());
-+            return;
-+        }
-+
-+        std::istringstream stream(parted_output);
-+        std::string line;
-+
-+        while (std::getline(stream, line)) {
-+            gui_print("%s\n", line.c_str());
-+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-+        }
-+
-+        gui_print("\nDone!\n");
-+    }).detach();
-+
-+    gui_print("\n");
-+}
-+
-+void TWFunc::FormatByArKT() 
-+{
-+    // Check which partitions are selected to format
-+    bool format_win = DataManager::GetIntValue("arkt_format_win") == 1;
-+    bool format_esp = DataManager::GetIntValue("arkt_format_esp") == 1;
-+
-+    // Exit early if nothing is selected
-+    if (!format_win && !format_esp) {
-+        gui_print("Nothing selected to format.\n");
-+        return;
-+    }
-+
-+    // Print appropriate start message
-+	if (format_win && format_esp) {
-+		gui_print("\nFormatting WIN and ESP partitions...\n");
-+	} else if (format_win) {
-+		gui_print("\nFormatting only WIN partition...");
-+		gui_print(" ");
-+	} else if (format_esp) {
-+		gui_print("\nFormatting only ESP partition...");
-+	}
-+
-+    // Format WIN and ESP partitions asynchronously
-+    std::thread([format_win, format_esp] {
-+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+
-+        const std::string win_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/win";
-+        const std::string esp_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/esp";
-+
-+        // Check if selected partitions actually exist
-+        if ((format_win && !TWFunc::Path_Exists(win_part)) ||
-+            (format_esp && !TWFunc::Path_Exists(esp_part))) {
-+            gui_print("Nothing to format. Check your partitions if it has Windows & ESP Partitions.\n");
-+            return;
-+        }
-+
-+        Exec_Cmd("sync");
-+        if (format_win)
-+            Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
-+        if (format_esp)
-+            Exec_Cmd("umount -lf " + esp_part + " >/dev/null 2>&1 || true");
-+
-+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-+
-+        // Clear first sector to erase old data
-+        if (format_win)
-+            Exec_Cmd("dd if=/dev/zero of=" + win_part + " bs=512 count=1 >/dev/null 2>&1 || true");
-+        if (format_esp)
-+            Exec_Cmd("dd if=/dev/zero of=" + esp_part + " bs=512 count=1 >/dev/null 2>&1 || true");
-+
-+        Exec_Cmd("sync");
-+
-+        // Attempt quick fix on the NTFS partition before reformatting
-+        if (format_win)
-+            Exec_Cmd("ntfsfix " + win_part + " >/dev/null 2>&1 || true");
-+
-+        std::string esp_out, win_out;
-+        int esp_code = 0, win_code = 0;
-+
-+        // Format ESP partition as FAT32
-+        if (format_esp) {
-+            esp_code = Exec_Cmd("mkfs.fat -F32 -s1 " + esp_part + " -n ESPNABU", esp_out, true);
-+            gui_print("\n%s\n", esp_out.c_str());
-+        }
-+
-+        // Format WIN partition as NTFS
-+        if (format_win) {
-+            win_code = Exec_Cmd("mkfs.ntfs -f " + win_part + " -L WINNABU", win_out, true);
-+            gui_print("%s\n", win_out.c_str());
-+        }
-+
-+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-+        Exec_Cmd("sync");
-+
-+        if ((format_win && win_code != 0) || (format_esp && esp_code != 0))
-+            gui_print("Formatting failed for one or both partitions. Check above.\n");
-+        else
-+            gui_print("formatted successfully!\n");
-+
-+        sync();
-+    }).detach();
-+}
-+
-+
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-07-20 20:29:21.795806826 +0530
-@@ -75,6 +75,11 @@
++++ /bootable/recovery/twrp-functions.hpp	2025-07-21 13:34:01.592021309 +0530
+@@ -75,6 +75,7 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
  	static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
-+	static void PartitionSizesByArKT(); 
-+	static void CommonByArKT();
 +	static void RotationByArkt();
-+	static void partedprintByArKT();
-+	static void FormatByArKT();
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-07-17 14:42:09.180118864 +0530
-+++ /bootable/recovery/variables.h	2025-07-20 20:29:21.795993587 +0530
++++ /bootable/recovery/variables.h	2025-07-21 13:34:01.592368635 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
@@ -1493,11 +962,3 @@ diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/var
  #define TW_VERSION_STR TW_MAIN_VERSION_STR TW_DEVICE_VERSION
  #define TW_SETTINGS_FILE            ".twrps"
  #define TW_RECOVERY_NAME            "TWRP"
-@@ -149,6 +149,7 @@
- #define TW_IS_SUPER                 "tw_is_super"
- #define TW_VIRTUAL_AB_ENABLED       "tw_virtual_ab.enabled"
- #define TW_AUTO_REFLASHTWRP_VAR     "tw_auto_reflashtwrp"
-+#define ARKT_PART_SIZE              "arkt_part_size"
- 
- // BUILD PROPS
- #define TW_FASTBOOT_MODE_PROP         "ro.twrp.fastbootd"
