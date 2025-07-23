@@ -455,6 +455,9 @@
 			<listbox style="options_listbox">
 				<placement x="%col1_x_right%" y="%row9_y%" w="%content_half_width%" h="%listbox_options_height%"/>
 				<icon selected="checkbox_true" unselected="checkbox_false"/>
+				<listitem name="Magic Auto-installer for recovery ROM">
+					<data variable="arkt_magic_auto_installer"/>
+				</listitem>
 				<listitem name="{@zip_sig_chk=Zip signature verification}">
 					<data variable="tw_signed_zip_verify"/>
 				</listitem>
