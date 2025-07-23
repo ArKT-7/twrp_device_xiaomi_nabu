@@ -740,11 +740,7 @@ twrp/bootable/recovery/gui/objects.hpp
 	int partitionByArKT(std:: string arg);
 
 
-8. Delete this files:
-    ./bootable/recovery/gui/theme/extra-languages/fonts/Sinhala.ttf
-    ./bootable/recovery/gui/theme/extra-languages/languages/lk.xml
-   
-9.
+8.
 twrp/build/core/Makefile
 
 # here i edited ramdisk-list.sha256sum to exclude some files as they swap when do rotation and if not exclude then permanent flashing will not work

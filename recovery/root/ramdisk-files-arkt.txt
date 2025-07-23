@@ -311,9 +311,7 @@ twres/languages
 twres/languages/it.xml
 twres/languages/el.xml
 twres/languages/en.xml
-twres/languages/zh_TW.xml
 twres/languages/nl.xml
-twres/languages/ja.xml
 twres/languages/fr.xml
 twres/languages/sl.xml
 twres/languages/id.xml
@@ -327,16 +325,11 @@ twres/languages/pt_BR.xml
 twres/languages/es.xml
 twres/languages/sv.xml
 twres/languages/hu.xml
-twres/languages/zh_CN.xml
 twres/languages/tr.xml
 twres/languages/pt_PT.xml
 twres/splash.xml
 twres/fonts
-twres/fonts/DroidSansFallback.ttf
-twres/fonts/NotoSansCJKjp-Regular.ttf
-twres/fonts/OFL.txt
 twres/fonts/DroidSansMono.ttf
-twres/fonts/DroidSansMono-term.ttf
 twres/fonts/RobotoCondensed-Regular.ttf
 twres/landscape.xml
 twres/ui.xml
