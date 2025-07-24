@@ -51,13 +51,20 @@ umountm() {
 }
 
 attach_chroot() {
-	mkdir /mnt/linux/root -p
-	mount /dev/block/by-name/linux /mnt/linux/root
-	mount /dev/block/by-name/esp /mnt/linux/root/boot/efi
-	mount -t proc proc /mnt/linux/root/proc
-	mount -t sysfs sysfs /mnt/linux/root/sys
-	mount -o bind /dev /mnt/linux/root/dev
-	mount -o bind /dev/pts /mnt/linux/root/dev/pts
+        local lin=/dev/block/by-name/linux
+        local esp=/dev/block/by-name/esp
+        [ -b "$lin" ] || { echo -e "\nError! Linux partition not found, Please create the partition first\n"; exit 1; }
+        [ -b "$esp" ] || { echo -e "\nError! ESP partition not found, Please create the partition first\n"; exit 1; }
+        mkdir /mnt/linux/root -p
+        mount "$lin" /mnt/linux/root || { echo -e "\nFailed to mount $lin\n"; exit 1; }
+        if [ -b "$esp" ]; then
+                mkdir -p /mnt/linux/root/boot/efi
+                mount "$esp" /mnt/linux/root/boot/efi || { echo -e "\nFailed to mount $esp\n"; exit 1; }
+        fi
+        mount -t proc proc /mnt/linux/root/proc || echo "Failed to mount proc"
+        mount -t sysfs sysfs /mnt/linux/root/sys || echo "Failed to mount sys"
+        mount -o bind /dev /mnt/linux/root/dev || echo "Failed to bind /dev"
+        mount -o bind /dev/pts /mnt/linux/root/dev/pts || echo "Failed to bind /dev/pts"
 }
 
 detach_chroot() {
