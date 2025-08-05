@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-07-17 14:42:09.087906925 +0530
-+++ /bootable/recovery/data.cpp	2025-07-24 02:04:56.775921054 +0530
+--- /bootable/recovery/data.cpp	2025-08-05 19:52:09.029150666 +0530
++++ /bootable/recovery/data.cpp	2025-08-05 20:17:15.905746657 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -11,8 +11,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-07-17 14:42:09.097402559 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-07-24 02:11:57.384766829 +0530
+--- /bootable/recovery/gui/action.cpp	2025-08-05 19:52:09.042787658 +0530
++++ /bootable/recovery/gui/action.cpp	2025-08-05 23:02:12.625588400 +0530
 @@ -209,6 +209,7 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -21,7 +21,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -1066,6 +1067,252 @@
+@@ -1066,6 +1067,269 @@
  	int i, ret_val = 0, wipe_cache = 0;
  	// We're going to jump to this page first, like a loading page
  	gui_changePage(arg);
@@ -30,7 +30,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +
 +		if (zip_queue_index != 1) {
 +			LOGERR("Error!! Please select only one ZIP file for magic flashing option");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -51,7 +52,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +					long available_kb = std::stol(avail);
 +					if (available_kb < 15000000) {
 +						LOGERR("Error!! Not enough space on /sdcard. Around 15GB required!");
-+						DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++						zip_queue_index = 0;
++						DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +						DataManager::SetValue("arkt_magic_auto_installer", 0);
 +						operation_end(1);
 +						return 1;
@@ -61,7 +63,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			}
 +		} else {
 +			LOGERR("Error!! Failed to check /sdcard free space.");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -77,7 +80,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		std::string payload_check_out;
 +		if (TWFunc::Exec_Cmd(zip_check_cmd, payload_check_out, true) != 0 || payload_check_out.empty()) {
 +			LOGERR("Error!! ZIP does not contain payload.bin, Not a valid OTA/Recovery ROM ZIP");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -88,7 +92,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		std::string extract_cmd = "unzip -o \"" + zip_path + "\" payload.bin -d /sdcard/arkt-magic/";
 +		if (TWFunc::Exec_Cmd(extract_cmd, true) != 0) {
 +			LOGERR("Error!! Failed to extract payload.bin from ZIP");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -100,7 +105,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		std::string payload_out;
 +		if (TWFunc::Exec_Cmd(analyze_cmd, payload_out, true) != 0 || payload_out.empty()) {
 +			LOGERR("Error!! Failed to analyze payload.bin");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -125,7 +131,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			for (const auto& part : missing) {
 +				gui_print("  - %s\n", part.c_str());
 +			}
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -138,7 +145,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		std::string dump_out;
 +		if (TWFunc::Exec_Cmd(dump_cmd, true) != 0) {
 +			LOGERR("Error!! Failed to extract payload.bin images");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -162,7 +170,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			std::string wc_output;
 +			if (TWFunc::Exec_Cmd(wc_cmd, wc_output, true) != 0 || wc_output.empty()) {
 +				LOGERR("Error!! Failed to get size of %s.img", part.c_str());
-+				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++				zip_queue_index = 0;
++				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +				DataManager::SetValue("arkt_magic_auto_installer", 0);
 +				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +				operation_end(1);
@@ -179,7 +188,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		lpmake_cmd += "--virtual-ab --output /sdcard/arkt-magic/super.img";
 +		if (TWFunc::Exec_Cmd(lpmake_cmd, true) != 0) {
 +			LOGERR("Error!! lpmake failed to create super.img");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -211,7 +221,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +				std::string size_out;
 +				if (TWFunc::Exec_Cmd(size_cmd, size_out, true) != 0 || size_out.empty()) {
 +					LOGERR("Error!! Failed to get size of %s.img", img_path.c_str());
-+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++					zip_queue_index = 0;
++					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +					DataManager::SetValue("arkt_magic_auto_installer", 0);
 +					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +					operation_end(1);
@@ -226,7 +237,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +
 +				if (TWFunc::Exec_Cmd(flash_cmd, true) != 0) {
 +					LOGERR("Error!! Failed to flash %s to %s\n", img_path.c_str(), block_path.c_str());
-+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++					zip_queue_index = 0;
++					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +					DataManager::SetValue("arkt_magic_auto_installer", 0);
 +					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +					operation_end(1);
@@ -241,7 +253,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		std::string super_size_out;
 +		if (TWFunc::Exec_Cmd(super_size_cmd, super_size_out, true) != 0 || super_size_out.empty()) {
 +			LOGERR("Error!! Failed to get size of super.img");
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++			zip_queue_index = 0;
++			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
 +			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +			operation_end(1);
@@ -255,7 +268,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			gui_print("Flashing super.img to super partition...");
 +			if (TWFunc::Exec_Cmd(super_flash_cmd, true) != 0) {
 +				LOGERR("Error!! Failed to flash super.img");
-+				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++				zip_queue_index = 0;
++			    DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +				DataManager::SetValue("arkt_magic_auto_installer", 0);
 +				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 +				operation_end(1);
@@ -264,9 +278,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		}
 +
 +		gui_print("Magic Flashing completed!");
-+		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
++		PartitionManager.Set_Active_Slot("A");
++		zip_queue_index = 0;
++		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +		DataManager::SetValue("arkt_magic_auto_installer", 0);
 +		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
++		PartitionManager.Set_Active_Slot("A");
 +		operation_end(0);
 +		return 0;
 +	}
@@ -274,7 +291,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	for (i=0; i<zip_queue_index; i++) {
  		string zip_path = zip_queue[i];
  		size_t slashpos = zip_path.find_last_of('/');
-@@ -2365,3 +2612,20 @@
+@@ -2365,3 +2629,20 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -296,8 +313,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    return 0;
 +}
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-07-17 14:42:09.098091657 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-07-24 02:04:56.776859244 +0530
+--- /bootable/recovery/gui/objects.hpp	2025-08-05 19:52:09.044447159 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-08-05 20:17:15.906796452 +0530
 @@ -334,6 +334,7 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -307,8 +324,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  	// (originally) threaded actions
  	int fileexists(std::string arg);
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp.cpp	2025-07-24 02:05:09.735114142 +0530
+--- /bootable/recovery/twrp.cpp	2025-08-05 19:52:09.129300736 +0530
++++ /bootable/recovery/twrp.cpp	2025-08-05 20:17:15.907098176 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -328,8 +345,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	// Launch the main GUI
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-07-17 14:42:09.176566325 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-07-24 02:04:56.777540022 +0530
+--- /bootable/recovery/twrp-functions.cpp	2025-08-05 19:52:09.129300736 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-08-05 20:17:15.907430688 +0530
 @@ -1659,4 +1659,91 @@
  	return ret;
  }
@@ -423,8 +440,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-07-24 02:04:56.777965859 +0530
+--- /bootable/recovery/twrp-functions.hpp	2025-08-05 19:52:09.129300736 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-08-05 20:17:15.907723906 +0530
 @@ -75,6 +75,7 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -434,8 +451,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
---- /bootable/recovery/variables.h	2025-07-17 14:42:09.180118864 +0530
-+++ /bootable/recovery/variables.h	2025-07-24 02:04:56.778815678 +0530
+--- /bootable/recovery/variables.h	2025-08-05 19:52:09.132790994 +0530
++++ /bootable/recovery/variables.h	2025-08-05 20:17:15.908011714 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_

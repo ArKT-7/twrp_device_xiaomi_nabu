@@ -161,7 +161,8 @@ int GUIAction::flash(std::string arg)
 
 		if (zip_queue_index != 1) {
 			LOGERR("Error!! Please select only one ZIP file for magic flashing option");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -182,7 +183,8 @@ int GUIAction::flash(std::string arg)
 					long available_kb = std::stol(avail);
 					if (available_kb < 15000000) {
 						LOGERR("Error!! Not enough space on /sdcard. Around 15GB required!");
-						DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+						zip_queue_index = 0;
+						DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 						DataManager::SetValue("arkt_magic_auto_installer", 0);
 						operation_end(1);
 						return 1;
@@ -192,7 +194,8 @@ int GUIAction::flash(std::string arg)
 			}
 		} else {
 			LOGERR("Error!! Failed to check /sdcard free space.");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -208,7 +211,8 @@ int GUIAction::flash(std::string arg)
 		std::string payload_check_out;
 		if (TWFunc::Exec_Cmd(zip_check_cmd, payload_check_out, true) != 0 || payload_check_out.empty()) {
 			LOGERR("Error!! ZIP does not contain payload.bin, Not a valid OTA/Recovery ROM ZIP");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -219,7 +223,8 @@ int GUIAction::flash(std::string arg)
 		std::string extract_cmd = "unzip -o \"" + zip_path + "\" payload.bin -d /sdcard/arkt-magic/";
 		if (TWFunc::Exec_Cmd(extract_cmd, true) != 0) {
 			LOGERR("Error!! Failed to extract payload.bin from ZIP");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -231,7 +236,8 @@ int GUIAction::flash(std::string arg)
 		std::string payload_out;
 		if (TWFunc::Exec_Cmd(analyze_cmd, payload_out, true) != 0 || payload_out.empty()) {
 			LOGERR("Error!! Failed to analyze payload.bin");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -256,7 +262,8 @@ int GUIAction::flash(std::string arg)
 			for (const auto& part : missing) {
 				gui_print("  - %s\n", part.c_str());
 			}
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -269,7 +276,8 @@ int GUIAction::flash(std::string arg)
 		std::string dump_out;
 		if (TWFunc::Exec_Cmd(dump_cmd, true) != 0) {
 			LOGERR("Error!! Failed to extract payload.bin images");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -293,7 +301,8 @@ int GUIAction::flash(std::string arg)
 			std::string wc_output;
 			if (TWFunc::Exec_Cmd(wc_cmd, wc_output, true) != 0 || wc_output.empty()) {
 				LOGERR("Error!! Failed to get size of %s.img", part.c_str());
-				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+				zip_queue_index = 0;
+				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 				DataManager::SetValue("arkt_magic_auto_installer", 0);
 				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 				operation_end(1);
@@ -310,7 +319,8 @@ int GUIAction::flash(std::string arg)
 		lpmake_cmd += "--virtual-ab --output /sdcard/arkt-magic/super.img";
 		if (TWFunc::Exec_Cmd(lpmake_cmd, true) != 0) {
 			LOGERR("Error!! lpmake failed to create super.img");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -342,7 +352,8 @@ int GUIAction::flash(std::string arg)
 				std::string size_out;
 				if (TWFunc::Exec_Cmd(size_cmd, size_out, true) != 0 || size_out.empty()) {
 					LOGERR("Error!! Failed to get size of %s.img", img_path.c_str());
-					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+					zip_queue_index = 0;
+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 					DataManager::SetValue("arkt_magic_auto_installer", 0);
 					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 					operation_end(1);
@@ -357,7 +368,8 @@ int GUIAction::flash(std::string arg)
 
 				if (TWFunc::Exec_Cmd(flash_cmd, true) != 0) {
 					LOGERR("Error!! Failed to flash %s to %s\n", img_path.c_str(), block_path.c_str());
-					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+					zip_queue_index = 0;
+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 					DataManager::SetValue("arkt_magic_auto_installer", 0);
 					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 					operation_end(1);
@@ -372,7 +384,8 @@ int GUIAction::flash(std::string arg)
 		std::string super_size_out;
 		if (TWFunc::Exec_Cmd(super_size_cmd, super_size_out, true) != 0 || super_size_out.empty()) {
 			LOGERR("Error!! Failed to get size of super.img");
-			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+			zip_queue_index = 0;
+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 			DataManager::SetValue("arkt_magic_auto_installer", 0);
 			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 			operation_end(1);
@@ -386,7 +399,8 @@ int GUIAction::flash(std::string arg)
 			gui_print("Flashing super.img to super partition...");
 			if (TWFunc::Exec_Cmd(super_flash_cmd, true) != 0) {
 				LOGERR("Error!! Failed to flash super.img");
-				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+				zip_queue_index = 0;
+			    DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 				DataManager::SetValue("arkt_magic_auto_installer", 0);
 				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
 				operation_end(1);
@@ -395,9 +409,12 @@ int GUIAction::flash(std::string arg)
 		}
 
 		gui_print("Magic Flashing completed!");
-		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
+		PartitionManager.Set_Active_Slot("A");
+		zip_queue_index = 0;
+		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 		DataManager::SetValue("arkt_magic_auto_installer", 0);
 		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
+		PartitionManager.Set_Active_Slot("A");
 		operation_end(0);
 		return 0;
 	}
