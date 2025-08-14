@@ -27,5 +27,5 @@ parted -s $disk rm 31 \
     mkpart userdata ext4 ${winend}MB 100% \
     set 31 esp on
 sync; formatwindata; formatwinesp; fixgpt
-parted $d p free
+parted $disk p free
 echo done
