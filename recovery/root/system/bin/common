@@ -43,8 +43,6 @@ if getprop sys.usb.config | grep -q "mtp"; then
     exit
 fi
 
-max=$(( $(blockdev --getsize64 /dev/block/sda) / 1000000 ))
-
 for i in sdcard data; do umount -lf /$i 2>/dev/null; done
 dmsetup remove -f userdata 2>/dev/null
 for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done
