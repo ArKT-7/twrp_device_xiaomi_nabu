@@ -11,7 +11,7 @@ env:
   MANIFEST_URL: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git
   MANIFEST_BRANCH: twrp-12.1
 
-  DEVICE_TREE_URL: https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git
+  DEVICE_TREE_URL: https://github.com/Kumar-Jy/twrp_device_xiaomi_nabu.git
   DEVICE_TREE_BRANCH: mod-windows
   DEVICE_PATH: device/xiaomi/nabu
 
