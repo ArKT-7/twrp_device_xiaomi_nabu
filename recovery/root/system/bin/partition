@@ -1,62 +1,31 @@
-#!/sbin/bash
+#!/sbin/sh
 . common
+max=$(parted -s /dev/block/sda unit MB p -m | grep '^/dev/block/sda:' | cut -d: -f2 | tr -cd '0-9')
+[ -z "$max" ] && { echo "Failed to get disk size"; exit 1; }
+RESERVED_START=11222 RESERVED_END=7000
+winmax=$(( (max - RESERVED_START - RESERVED_END)/1000 ))
 
-RESERVED_START=11222
-RESERVED_END=7000
+[ -n "$1" ] && s="$1" || { echo "Enter Windows size GB (25-$winmax)"; read s; [ -z "$s" ] && exit 1; }
+s=$(echo "$s" | tr -cd '0-9.')
 
-usable_mb=$((max - RESERVED_START - RESERVED_END))
-winmax=$((usable_mb / 1000))
-input="${1-}"
-size=$(echo "$input" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]' | sed 's/gb$//;s/[^0-9.]//g')
-if [[ -z "$input" ]]; then
-    winend=$(((max + RESERVED_START) / 2))
-else
-    if ! [[ "$size" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
-        echo "Invalid input. Please enter a number (e.g., 60GB)" >&2
-        exit 1
-    fi
-    size_int=$(echo "$size" | cut -d'.' -f1)
-    if (( size_int < 25 || size_int > winmax )); then
-        echo "Invalid size! Min: 25GB, Max: ${winmax}GB" >&2
-        exit 1
-    fi
-    winend=$(echo "$size * 1000" | bc)
-    winend=$(printf "%.0f" "$winend")
-    winend=$(( (winend + 1023) / 1024 * 1024 ))
-    winend=$((winend + RESERVED_START))
-fi
-windows_gb=$(echo "scale=2; ($winend - $RESERVED_START) / 1000" | bc)
-userdata_gb=$(echo "scale=2; ($max - $winend) / 1000" | bc)
-echo ""
-echo "Windows Partition: $windows_gb GB"
-echo "Android Partition: $userdata_gb GB"
-while true; do
-  echo ""
-  echo -n "Does this look good? (y/n): "
-  read yn
-  case "$yn" in
-    [Yy]* ) break ;;
-    [Nn]* ) echo "Operation cancelled"; exit 1 ;;
-    * ) echo "Please enter (yes/y/Y or no/n/N)." ;;
-  esac
-done
-echo ""
-echo "Proceeding with Windows partitioning..."
-echo ""
+case $s in *.*) i=${s%.*}; f=${s#*.}; pow=1; for j in $(seq 1 ${#f}); do pow=$((pow*10)); done
+  mb=$((i*1000 + f*1000/pow)) ;; *) mb=$((s*1000)) ;; esac
+
+[ $mb -lt 25000 ] || [ $mb -gt $((winmax*1000)) ] && { echo "un.. type correctly"; exit 1; }
+
+winend=$(( mb + RES_START ))
+echo "Windows: $(( (winend-RES_START)/1000 )) GB, Android: $(( (max-winend)/1000 )) GB"
+echo -n "Does this sound good (y/n)? "; read yn
+case "$yn" in [Yy]*) ;; *) echo "Rethink things carefully and, eventually, you'll come to a conclusion."; exit 1;; esac
+
 disk=/dev/block/sda
 stockpart
-sgdisk --resize-table 64 "$disk"
-parted -s "$disk" \
-  rm 31 \
-  mkpart esp fat32 10872MB 11222MB \
-  mkpart win ntfs 11222MB "${winend}MB" \
-  mkpart userdata ext4 "${winend}MB" 100% \
-  set 31 esp on
-
-sync
-formatwindata
-formatwinesp
-fixgpt
-sync
-parted "$disk" p free
-echo "done!"
+sgdisk --resize-table 64 $d
+parted -s $disk rm 31 \
+	mkpart esp fat32 10872MB 11222MB \
+    mkpart win ntfs 11222MB ${winend}MB \
+    mkpart userdata ext4 ${winend}MB 100% \
+    set 31 esp on
+sync; formatwindata; formatwinesp; fixgpt
+parted $d p free
+echo done
