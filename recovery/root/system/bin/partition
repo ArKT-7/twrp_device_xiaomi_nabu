@@ -20,7 +20,7 @@ case "$yn" in [Yy]*) ;; *) echo "Rethink things carefully and, eventually, you'l
 
 disk=/dev/block/sda
 stockpart
-sgdisk --resize-table 64 $d
+sgdisk --resize-table 64 $disk
 parted -s $disk rm 31 \
 	mkpart esp fat32 10872MB 11222MB \
     mkpart win ntfs 11222MB ${winend}MB \
