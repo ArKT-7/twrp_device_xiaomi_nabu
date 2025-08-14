@@ -2,8 +2,8 @@
 . common
 max=$(parted -s /dev/block/sda unit MB p -m | grep '^/dev/block/sda:' | cut -d: -f2 | tr -cd '0-9')
 [ -z "$max" ] && { echo "Failed to get disk size"; exit 1; }
-RESERVED_START=11222 RESERVED_END=7000
-winmax=$(( (max - RESERVED_START - RESERVED_END)/1000 ))
+RES_START=11222 RES_END=7000
+winmax=$(( (max - RES_START - RES_END)/1000 ))
 
 [ -n "$1" ] && s="$1" || { echo "Enter Windows size GB (25-$winmax)"; read s; [ -z "$s" ] && exit 1; }
 s=$(echo "$s" | tr -cd '0-9.')
