@@ -3,6 +3,7 @@
 winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
 defaultpath=/sdcard/winbackup
 
+printf "\n==== Windows Backup ====\n"
 printf "Default backup path: $defaultpath\n"
 printf "Enter custom path or press Enter to use default:\n> "
 read -r p
