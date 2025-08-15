@@ -3,9 +3,11 @@
 winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
 defaultpath=/sdcard/winbackup
 
-printf "Enter backup path or press Enter to use default [%s]: " "$defaultpath"
-read -r userpath
-backuppath="${userpath:-$defaultpath}"
+printf "\n==== Windows Backup ====\n"
+printf "Default backup path: /sdcard/winbackup\n"
+printf "Enter custom path or press Enter to use default:\n> "
+read -r p
+backuppath="${p:-/sdcard/winbackup}"
 
 mkdir -p "$backuppath" || { echo "Failed to create $backuppath"; exit 1; }
 touch "$backuppath/.test" && rm "$backuppath/.test" || { echo "Path not writable"; exit 1; }
