@@ -1,0 +1,23 @@
+#!/bin/sh
+
+winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
+defaultpath=/sdcard/winbackup
+
+printf "Backup path [%s]: " "$defaultpath"
+read -r userpath
+backuppath="${userpath:-$defaultpath}"
+
+winimage=$(find "$backuppath" -maxdepth 1 -type f \( -iname "*.esd" -o -iname "*.wim" \) -print -quit)
+[ -f "$winimage" ] || { echo "No Windows image found in $backuppath"; exit 1; }
+
+required=$(wimlib info "$winimage" | awk -F: '/Total bytes/{gsub(/ /,"",$2);print $2}')
+[ -n "$required" ] || { echo "Failed to read image size"; exit 1; }
+
+winsize=$(blockdev --getsize64 "$winpart") || { echo "Cannot read WIN partition"; exit 1; }
+[ "$winsize" -gt "$required" ] || { echo "WIN partition too small"; exit 1; }
+
+printf "Restoring %s to WIN partition...\n" "$winimage"
+mkfs.ntfs -f -L WINNABU "$winpart" || exit 1
+wimlib apply "$winimage" 1 "$winpart" || exit 1
+
+echo "Restoration complete"
