@@ -11,7 +11,7 @@ winimage=$(find "$backuppath" -maxdepth 1 -type f 2>/dev/null | grep -iE '\.(esd
 required=$(wimlib-imagex info "$winimage" | grep "Total bytes" | awk -F: '{gsub(/ /,"",$2);print $2}') \
     || { echo "Failed to read image size from $winimage"; exit 1; }
 [ "$(blockdev --getsize64 "$winpart")" -gt "$required" ] || { echo "WIN partition is too small"; exit 1; }
-umount "$winpart" 2>/dev/null
+umount -f "$winpart" 2>/dev/null
 mkfs.ntfs -f -Q -L WINNABU "$winpart" || { echo "Failed to format $winpart as NTFS"; exit 1; }
 wimlib-imagex apply "$winimage" 1 "$winpart" || { echo "Failed to apply image to $winpart"; exit 1; }
 echo "Restoration complete"
