@@ -1,17 +1,28 @@
 #!/sbin/sh
-winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
+winpart=/dev/block/by-name/win
+
 printf "\n=== Windows Backup Restore ===\n"
 printf "Default backup path: /sdcard/winbackup\n"
 printf "Enter custom path or press Enter to use default:\n> "
 read -r p
 backuppath="${p:-/sdcard/winbackup}"
+
 winimage=$(find "$backuppath" -maxdepth 1 -type f 2>/dev/null | grep -iE '\.(esd|wim)$' | head -n1) \
     || { echo "Failed to search for image in $backuppath"; exit 1; }
 [ -f "$winimage" ] || { echo "No backup image found in $backuppath"; exit 1; }
-required=$(wimlib-imagex info "$winimage" | grep "Total bytes" | awk -F: '{gsub(/ /,"",$2);print $2}') \
-    || { echo "Failed to read image size from $winimage"; exit 1; }
-[ "$(blockdev --getsize64 "$winpart")" -gt "$required" ] || { echo "WIN partition is too small"; exit 1; }
+
+requsize=$(wimlib info "$winimage" | awk '/Total Bytes/ {gsub(/[^0-9]/,""); print}')
+[ -n "$requsize" ] || { echo "Failed to parse image size from $winimage"; exit 1; }
+partsize=$(blockdev --getsize64 "$winpart" 2>/dev/null)
+[ -n "$partsize" ] || { echo "Failed to get size of $winpart"; exit 1; }
+
+echo "Avalable size : $(awk "BEGIN {printf \"%.2f\", $partsize/1e9}") GB"
+echo "Required Size : $(awk "BEGIN {printf \"%.2f\", $requsize/1e9}") GB"
+
+[ "$partsize" -gt "$requsize" ] || { echo "WIN partition is too small"; exit 1; }
+
 umount -f "$winpart" 2>/dev/null
-mkfs.ntfs -f -Q -L WINNABU "$winpart" || { echo "Failed to format $winpart as NTFS"; exit 1; }
-wimlib-imagex apply "$winimage" 1 "$winpart" || { echo "Failed to apply image to $winpart"; exit 1; }
+mkfs.ntfs -f -Q -L WINF1 "$winpart" || { echo "Failed to format $winpart as NTFS"; exit 1; }
+wimlib apply "$winimage" 1 "$winpart" || { echo "Failed to apply image to $winpart"; exit 1; }
+
 echo "Restoration complete"
