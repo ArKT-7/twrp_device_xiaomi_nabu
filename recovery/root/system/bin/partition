@@ -1,6 +1,6 @@
 #!/sbin/bash
 . common
-max=$(parted -s /dev/block/sda unit MB p -m | grep '^/dev/block/sda:' | cut -d: -f2 | tr -cd '0-9')
+max=$(($(blockdev --getsize64 /dev/block/sda) / 1000000))
 [ -z "$max" ] && { echo "Failed to get disk size"; exit 1; }
 RES_START=11222 RES_END=7000
 winmax=$(( (max - RES_START - RES_END)/1000 ))
