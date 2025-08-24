@@ -5,7 +5,7 @@ max=$(parted -s /dev/block/sda unit MB p -m | grep '^/dev/block/sda:' | cut -d: 
 RES_START=11222 RES_END=7000
 winmax=$(( (max - RES_START - RES_END)/1000 ))
 
-[ -n "$1" ] && s="$1" || { echo -n -e "\nEnter Windows size GB (25-$winmax): "; read s; [ -z "$s" ] && exit 1; }
+[ -n "$1" ] && s="$1" || { echo -n -e "\nEnter Windows size GB (25-$winmax): "; read s; [ -z "$s" ] && echo -e "Please enter a valid size in GB.\n" && exit 1; }
 s=$(echo "$s" | tr -cd '0-9.')
 
 case $s in *.*) i=${s%.*}; f=${s#*.}; pow=1; for j in $(seq 1 ${#f}); do pow=$((pow*10)); done
