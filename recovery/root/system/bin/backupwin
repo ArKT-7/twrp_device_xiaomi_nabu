@@ -1,6 +1,6 @@
 #!/bin/sh
 
-winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
+winpart=/dev/block/by-name/win
 defaultpath=/sdcard/winbackup
 
 printf "\n==== Windows Backup ====\n"
@@ -17,19 +17,13 @@ touch "$backuppath/.test" && rm "$backuppath/.test" || { echo "Path not writable
 umount -f "$winpart" 2>/dev/null
 mkdir -p /win && mount.ntfs "$winpart" /win || { echo "Mount failed"; exit 1; }
 
-reqb=$(df -k /win | awk 'NR==2 {print $3}') || { echo "Failed to get Win usage"; exit 1; }
-availb=$(df -k "$backuppath" | awk 'NR==2 {print $4}') || { echo "Failed to get available space"; exit 1; }
+requsize=$(df -k /win | awk 'NR==2 {printf "%d", $3*0.7}') || { echo "Failed to get Win usage"; exit 1; }
+avaisize=$(df -k "$backuppath" | awk 'NR==2 {print $4}') || { echo "Failed to get available space"; exit 1; }
 
-reqgb=$(awk "BEGIN {printf \"%.2f\", $reqb/1e6}")
-availgb=$(awk "BEGIN {printf \"%.2f\", $availb/1e6}")
+echo "Required Size : $(awk "BEGIN {printf \"%.2f\", $requsize/1e6}") GB"
+echo "Avalable size : $(awk "BEGIN {printf \"%.2f\", $avaisize/1e6}") GB"
 
-echo " Required Size  : $reqgb GB"
-echo " Available Size : $availgb GB"
-
-[ "$availb" -lt "$reqb" ] && {
-  echo "Not enough space: Need $reqgb GB, available $availgb GB"
-  exit 1
-}
+[ "$avaisize" -gt "$requsize" ] || { echo "Not enough free space"; exit 1; }
 
 echo "Backing up Win..."
 wimlib capture "$winpart" "$backuppath/winbackup.wim" || exit 1
