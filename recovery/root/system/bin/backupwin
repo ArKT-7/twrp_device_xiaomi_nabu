@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/sbin/bash
 
 winpart=/dev/block/by-name/win
 defaultpath=/sdcard/winbackup
