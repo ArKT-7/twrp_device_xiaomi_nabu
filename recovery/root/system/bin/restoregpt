@@ -1,0 +1,5 @@
+#!/sbin/bash
+. common
+restoregptstock "$@"
+
+echo !done
