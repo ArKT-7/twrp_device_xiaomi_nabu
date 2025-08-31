@@ -1,4 +1,4 @@
-#!/sbin/sh
+#!/sbin/bash
 winpart=/dev/block/by-name/win
 
 printf "\n=== Windows Backup Restore ===\n"
@@ -21,8 +21,8 @@ echo "Required Size : $(awk "BEGIN {printf \"%.2f\", $requsize/1e9}") GB"
 
 [ "$partsize" -gt "$requsize" ] || { echo "WIN partition is too small"; exit 1; }
 
-umount -f "$winpart" 2>/dev/null
-mkfs.ntfs -f -Q -L WINF1 "$winpart" || { echo "Failed to format $winpart as NTFS"; exit 1; }
+umount -lf "$winpart" 2>/dev/null
+mkfs.ntfs -f -Q -q -L WINF1 "$winpart" || { echo "Failed to format $winpart as NTFS"; exit 1; }
 wimlib apply "$winimage" 1 "$winpart" || { echo "Failed to apply image to $winpart"; exit 1; }
 
 echo "Restoration complete"
