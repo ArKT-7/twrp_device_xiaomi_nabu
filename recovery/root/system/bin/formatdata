@@ -1,8 +1,0 @@
-#!/sbin/bash
-. common
-userdata=/dev/block/platform/soc/1d84000.ufshc/by-name/userdata
-metadata=/dev/block/platform/soc/1d84000.ufshc/by-name/metadata
-[ -e $userdata -a -e $metadata ] || { echo "nothing to format huh. check your partitions"; exit 1; }
-make_f2fs -f -g android $userdata
-mke2fs -t ext4 -F $metadata
-echo "done!"
