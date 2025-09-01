@@ -76,11 +76,12 @@ restoregptstock() {
 }
 
 [ "$ignorekrjy" = true ] || {
+  bad=0
   for i in 1 2 3 4; do [ -e /dev/block/by-name/bk0$i ] || bad=1; done
-  ls /dev/block/sda3[4-9] /dev/block/sda[4-9][0-9] 2>/dev/null && bad=1
+  for d in /dev/block/sda3[5-9] /dev/block/sda[4-9][0-9]; do [ -e "$d" ] && bad=1; done
   [ "$bad" = 1 ] && {
-    echo "You’ve modified the partition table. It must be restored to stock. ALL DATA WILL BE LOST."
+    echo "Partition table modified! Restoring stock will WIPE ALL DATA."
     echo -n "Continue? (y/n): "; read yn
-    [ "$yn" != "${yn#[Yy]}" ] && restoregptstock 0 || { echo "Aborting."; exit 1; }
+    case $yn in [Yy]*) restoregptstock 0;; *) echo "Aborting."; exit 1;; esac
   }
 }
