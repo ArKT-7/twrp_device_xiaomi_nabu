@@ -48,12 +48,12 @@ fi
 
 for i in sdcard data; do umount -lf /$i 2>/dev/null; done
 dmsetup remove -f userdata 2>/dev/null
-for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/by-name/$i 2> /dev/null; done
+for mnt in $(awk '$1 ~ /^\/dev\/block/ {print $2}' /proc/mounts); do umount -lf "$mnt" 2>/dev/null; done
 
-restoregptstock() {
-  restore_one() {
-    gpt=$1 idx=$2 backup="/sbin/gpt$idx"
-    [ -f "$backup" ] || { echo "No backup $backup"; return 1; }
+restoregpt() {
+  restore_gpt() {
+    gpt=$1 idx=$2 backup="/system/bin/gpt$idx"
+    [ -f "$backup" ] || { echo "Backup $backup" not found; return 1; }
     for p in ${gpt}*; do umount "$p" 2>/dev/null; swapoff "$p" 2>/dev/null; done
     (mount | grep -q "$gpt" || grep -q "$gpt" /proc/swaps) && { echo "$gpt busy"; return 1; }
     sgdisk --pretend --clear --load-backup="$backup" "$gpt" || { echo "Dry-run fail $gpt"; return 1; }
@@ -66,11 +66,11 @@ restoregptstock() {
   }
   if [ $# -eq 0 ]; then
     i=0
-    for g in /dev/block/sd[a-f]; do restore_one "$g" $i; i=$((i+1)); done
+    for g in /dev/block/sd[a-f]; do restore_gpt "$g" $i; i=$((i+1)); done
   else
     case $1 in
-      [0-5]) g=/dev/block/sd$(printf \\$(printf '%o' $((97+$1)))); restore_one "$g" $1 ;;
-      *) echo "Usage: restoregptstock [0-5]"; return 1 ;;
+      [0-5]) g=/dev/block/sd$(printf \\$(printf '%o' $((97+$1)))); restore_gpt "$g" $1 ;;
+      *) echo "Usage: restoregpt [0-5]"; return 1 ;;
     esac
   fi
 }
@@ -80,8 +80,8 @@ restoregptstock() {
   for i in 1 2 3 4; do [ -e /dev/block/by-name/bk0$i ] || bad=1; done
   for d in /dev/block/sda3[5-9] /dev/block/sda[4-9][0-9]; do [ -e "$d" ] && bad=1; done
   [ "$bad" = 1 ] && {
-    echo "Partition table modified! Restoring stock will WIPE ALL DATA."
+    echo "You have modified partition table! Restoring stock will WIPE ALL DATA."
     echo -n "Continue? (y/n): "; read yn
-    case $yn in [Yy]*) restoregptstock 0;; *) echo "Aborting."; exit 1;; esac
+    case $yn in [Yy]*) restoregpt 0;; *) echo "Aborting."; exit 1;; esac
   }
 }
