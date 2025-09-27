@@ -308,7 +308,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +        TWFunc::Exec_Cmd("mkfs.fat -F32 -s1 /dev/block/platform/soc/1d84000.ufshc/sda31 -n ESPNABU");
 +
 +        gui_print("Formatting Linux Partition...\n");
-+        TWFunc::Exec_Cmd("mke2fs -t ext4 -F /dev/block/platform/soc/1d84000.ufshc/sda32");
++        TWFunc::Exec_Cmd("mkfs.ext4 -F -L linux /dev/block/platform/soc/1d84000.ufshc/sda32");
 +        sync();
 +
 +        TWFunc::partedprintByArKT();
@@ -1433,7 +1433,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +        // Format LINUX partition
 +        if (format_lin) {
-+            lin_code = Exec_Cmd("mke2fs -t ext4 -F " + lin_part, lin_out, true);
++            lin_code = Exec_Cmd("mkfs.ext4 -F -L linux " + lin_part, lin_out, true);
 +            gui_print("%s\n", lin_out.c_str());
 +        }
 +

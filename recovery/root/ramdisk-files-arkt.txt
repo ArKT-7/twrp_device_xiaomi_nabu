@@ -3459,6 +3459,7 @@ system/etc/init/vndservicemanager.rc
 system/etc/init/android.hardware.boot@1.0-service.rc
 system/etc/mkshrc
 system/bin
+system/bin/mkfs.ext4
 system/bin/mkfs.fat
 system/bin/chgrp
 system/bin/sysctl
