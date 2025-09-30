@@ -2,8 +2,8 @@
 winpart=/dev/block/by-name/win
 esppart=/dev/block/by-name/esp
 userdatapart=/dev/block/by-name/userdata
-userdatapart=/dev/block/by-name/metadata
-userdatapart=/dev/block/by-name/cust
+metadata=/dev/block/by-name/metadata
+cust=/dev/block/by-name/cust
 [ -e "$winpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
 target=$1
 #force unmount and suppress errors
