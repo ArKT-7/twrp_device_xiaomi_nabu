@@ -1,9 +1,10 @@
 #!/sbin/bash
-win=/dev/block/platform/soc/1d84000.ufshc/sda32
-esp=/dev/block/platform/soc/1d84000.ufshc/sda31
-
-stockpart(){
-sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda
+win=/dev/block/sda32
+esp=/dev/block/sda31
+removeparts(){
+    for i in $(seq 31 40); do
+        parted -s /dev/block/sda rm $i 2>/dev/null
+    done
 }
 
 formatwinesp(){
@@ -22,14 +23,16 @@ mke2fs -t ext4 -F /dev/block/sda19
 }
 
 restore(){
-stockpart
-parted -s /dev/block/sda resizepart 31 100%
+removeparts
+parted -s /dev/block/sda mkpart userdata ext4 10872MB  100%
 sync
 formatdata
 }
 
-fixgpt() {
-  for dev in /dev/block/sd{a..f}; do gdisk "$dev" <<< $'x\nj\n\nk\n\nw\nY\n'; done
+fixgpt(){
+  for d in /dev/block/sd[a-f]; do
+    [ -b "$d" ] && printf 'x\nj\n\nk\n\nw\nY\n' | gdisk "$d"
+  done
 }
 
 [ -e /config/usb_gadget/g1/configs/b.1/mass_storage.0 ] && echo "msc is enabled! aborting..." && echo "reboot and run the script again." && exit 1
@@ -45,4 +48,40 @@ fi
 
 for i in sdcard data; do umount -lf /$i 2>/dev/null; done
 dmsetup remove -f userdata 2>/dev/null
-for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i 2> /dev/null; done
+for mnt in $(awk '$1 ~ /^\/dev\/block/ {print $2}' /proc/mounts); do umount -lf "$mnt" 2>/dev/null; done
+
+restoregpt() {
+  restore_gpt() {
+    gpt=$1 idx=$2 backup="/system/bin/gpt$idx"
+    [ -f "$backup" ] || { echo "Backup $backup" not found; return 1; }
+    for p in ${gpt}*; do umount "$p" 2>/dev/null; swapoff "$p" 2>/dev/null; done
+    (mount | grep -q "$gpt" || grep -q "$gpt" /proc/swaps) && { echo "$gpt busy"; return 1; }
+    sgdisk --pretend --clear --load-backup="$backup" "$gpt" || { echo "Dry-run fail $gpt"; return 1; }
+    sgdisk --clear --load-backup="$backup" "$gpt" || return 1
+    if [ "$gpt" = "/dev/block/sda" ]; then
+      parted -s "$gpt" resizepart 31 100%
+      sync; formatdata; parted "$gpt" p free
+    fi
+    echo "$gpt restored"
+  }
+  if [ $# -eq 0 ]; then
+    i=0
+    for g in /dev/block/sd[a-f]; do restore_gpt "$g" $i; i=$((i+1)); done
+  else
+    case $1 in
+      [0-5]) g=/dev/block/sd$(printf \\$(printf '%o' $((97+$1)))); restore_gpt "$g" $1 ;;
+      *) echo "Usage: restoregpt [0-5]"; return 1 ;;
+    esac
+  fi
+}
+
+[ "$ignorekrjy" = true ] || {
+  bad=0
+  for i in 1 2 3 4; do [ -e /dev/block/by-name/bk0$i ] || bad=1; done
+  for d in /dev/block/sda3[5-9] /dev/block/sda[4-9][0-9]; do [ -e "$d" ] && bad=1; done
+  [ "$bad" = 1 ] && {
+    echo "You have modified partition table! Restoring stock will WIPE ALL DATA."
+    echo -n "Continue? (y/n): "; read yn
+    case $yn in [Yy]*) restoregpt 0;; *) echo "Aborting."; exit 1;; esac
+  }
+}
