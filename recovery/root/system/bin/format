@@ -1,7 +1,7 @@
 #!/sbin/bash
 winpart=/dev/block/by-name/win
 esppart=/dev/block/by-name/esp
-userdatapart=/dev/block/by-name/userdata
+userdata=/dev/block/by-name/userdata
 metadata=/dev/block/by-name/metadata
 cust=/dev/block/by-name/cust
 [ -e "$winpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
