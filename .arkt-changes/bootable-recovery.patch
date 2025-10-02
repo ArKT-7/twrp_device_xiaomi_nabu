@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-07-17 14:42:09.087906925 +0530
-+++ /bootable/recovery/data.cpp	2025-07-23 22:10:06.670968471 +0530
+--- /bootable/recovery/data.cpp	2025-10-02 18:26:49.148914658 +0530
++++ /bootable/recovery/data.cpp	2025-10-03 02:13:14.097221959 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -11,9 +11,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-07-17 14:42:09.097402559 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-07-23 22:10:06.671599515 +0530
-@@ -209,6 +209,14 @@
+--- /bootable/recovery/gui/action.cpp	2025-10-02 18:26:49.160562466 +0530
++++ /bootable/recovery/gui/action.cpp	2025-10-03 02:28:07.099365639 +0530
+@@ -210,6 +210,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
@@ -28,7 +28,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -593,6 +601,7 @@
+@@ -594,6 +602,7 @@
  	// to prevent crashing which could occur when we start deleting
  	// GUI resources in the action thread while we attempt to render
  	// with those same resources in another thread.
@@ -36,7 +36,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	return 0;
  }
  
-@@ -668,6 +677,7 @@
+@@ -676,6 +685,7 @@
  		PartitionManager.Mount_Current_Storage(true);
  	}
  	operation_end(0);
@@ -44,7 +44,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	return 0;
  }
  
-@@ -2365,3 +2375,285 @@
+@@ -2373,3 +2383,285 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -175,7 +175,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +        gui_print("Restoring partitions to stock...\n\n");
 +
 +        gui_print("Making partitions stock...\n");
-+        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
++        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/gpt0 /dev/block/sda");
 +
 +        gui_print("resizing userdata(Android) partition...\n");
 +        TWFunc::Exec_Cmd("parted -s /dev/block/sda resizepart 31 100%");
@@ -280,13 +280,13 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +        DataManager::GetValue("win_end_size", winend);
 +
 +        gui_print("Making partitions stock...\n");
-+        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/stock_gpt /dev/block/sda");
++        TWFunc::Exec_Cmd("sgdisk --clear --load-backup=/system/bin/gpt0 /dev/block/sda");
 +
 +        gui_print("Resizing partition table...\n");
 +        TWFunc::Exec_Cmd("sgdisk --resize-table 64 /dev/block/sda");
 +
 +        gui_print("Creating partitions...\n");
-+		TWFunc::Exec_Cmd("parted -s /dev/block/sda rm 31");
++        TWFunc::Exec_Cmd("parted -s /dev/block/sda rm 31");
 +        TWFunc::Exec_Cmd("parted -s /dev/block/sda mkpart esp fat32 10872MB 11222MB");
 +
 +        std::string win_end_str = std::to_string(winend) + "MB";
@@ -330,10 +330,11 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    sync();
 +    return 0;
 +}
+\ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-07-17 14:42:09.098091657 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-07-23 22:10:06.672129227 +0530
-@@ -334,6 +334,14 @@
+--- /bootable/recovery/gui/objects.hpp	2025-10-02 18:26:49.161306032 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-10-03 02:20:35.086126403 +0530
+@@ -335,6 +335,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
@@ -349,8 +350,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  	// (originally) threaded actions
  	int fileexists(std::string arg);
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp.cpp	2025-07-23 22:10:06.679948309 +0530
+--- /bootable/recovery/twrp.cpp	2025-10-02 18:26:49.258685190 +0530
++++ /bootable/recovery/twrp.cpp	2025-10-03 02:16:47.329039461 +0530
 @@ -475,6 +475,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
@@ -370,9 +371,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	// Launch the main GUI
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-07-17 14:42:09.176566325 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-07-23 22:10:06.680443156 +0530
-@@ -1659,4 +1659,314 @@
+--- /bootable/recovery/twrp-functions.cpp	2025-10-02 18:26:49.258685190 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-10-03 02:24:52.039420497 +0530
+@@ -1659,4 +1659,313 @@
  	return ret;
  }
  
@@ -685,11 +686,10 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    }).detach();
 +}
 +
-+
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-07-17 14:42:09.176738993 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-07-23 22:10:06.680736890 +0530
+--- /bootable/recovery/twrp-functions.hpp	2025-10-02 18:26:49.258685190 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-10-03 02:15:27.024529358 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -703,8 +703,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
---- /bootable/recovery/variables.h	2025-07-17 14:42:09.180118864 +0530
-+++ /bootable/recovery/variables.h	2025-07-23 22:10:06.681015451 +0530
+--- /bootable/recovery/variables.h	2025-10-02 18:26:49.263513874 +0530
++++ /bootable/recovery/variables.h	2025-10-03 02:22:25.095971237 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
