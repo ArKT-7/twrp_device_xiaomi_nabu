@@ -1,17 +1,17 @@
 #!/sbin/bash
 . common
-max=$(parted -s /dev/block/sda unit MB p -m | grep '^/dev/block/sda:' | cut -d: -f2 | tr -cd '0-9')
+max=$(($(blockdev --getsize64 /dev/block/sda) / 1000000))
 [ -z "$max" ] && { echo "Failed to get disk size"; exit 1; }
 RES_START=11222 RES_END=7000
 winmax=$(( (max - RES_START - RES_END)/1000 ))
 
-[ -n "$1" ] && s="$1" || { echo -n -e "\nEnter Windows size GB (25-$winmax): "; read s; [ -z "$s" ] && echo -e "un.. please type anything!\n" && exit 1; }
+[ -n "$1" ] && s="$1" || { echo -n -e "\nEnter Windows size GB (25-$winmax): "; read s; [ -z "$s" ] && echo -e "Please enter a valid size in GB.\n" && exit 1; }
 s=$(echo "$s" | tr -cd '0-9.')
 
 case $s in *.*) i=${s%.*}; f=${s#*.}; pow=1; for j in $(seq 1 ${#f}); do pow=$((pow*10)); done
   mb=$((i*1000 + f*1000/pow)) ;; *) mb=$((s*1000)) ;; esac
 
-[ $mb -lt 25000 ] || [ $mb -gt $((winmax*1000)) ] && { echo -e "un.. type correctly\n"; exit 1; }
+[ $mb -lt 25000 ] || [ $mb -gt $((winmax*1000)) ] && { echo -n -e "\nSize should be between (25-$winmax)\n"; exit 1; }
 
 winend=$(( mb + RES_START ))
 echo -e "\nWindows: $(( (winend-RES_START)/1000 )) GB\nAndroid: $(( (max-winend)/1000 )) GB\n"
@@ -19,9 +19,9 @@ echo -n "Does this sound good (y/n)? "; read yn
 case "$yn" in [Yy]*) ;; *) echo -e "Rethink things carefully and, eventually, you'll come to a conclusion.\n"; exit 1;; esac
 
 disk=/dev/block/sda
-stockpart
+removeparts
 sgdisk --resize-table 64 $disk
-parted -s $disk rm 31 \
+parted -s $disk \
     mkpart esp fat32 10872MB 11222MB \
     mkpart win ntfs 11222MB ${winend}MB \
     mkpart userdata ext4 ${winend}MB 100% \

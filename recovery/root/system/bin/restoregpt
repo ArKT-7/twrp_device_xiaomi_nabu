@@ -1,0 +1,5 @@
+#!/sbin/bash
+. common
+restoregpt "$@"
+
+echo !done

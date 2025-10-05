@@ -1,6 +1,9 @@
 #!/sbin/bash
-winpart=/dev/block/platform/soc/1d84000.ufshc/by-name/win
-esppart=/dev/block/platform/soc/1d84000.ufshc/by-name/esp
+winpart=/dev/block/by-name/win
+esppart=/dev/block/by-name/esp
+userdata=/dev/block/by-name/userdata
+metadata=/dev/block/by-name/metadata
+cust=/dev/block/by-name/cust
 [ -e "$winpart" -a -e "$esppart" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
 target=$1
 #force unmount and suppress errors
@@ -23,6 +26,18 @@ if [ "$target" = "win" ]; then
     echo "WIN format done!"
     exit 0
 fi
+#format userdata only
+if [ "$target" = "userdata" ]; then
+    [ -e "$userdata" ] || { echo "nothing to format huh. check your partitions"; exit 1; }
+    echo "Formatting userdata partition..."
+    force_umount "$userdata"
+    make_f2fs -f -g android "$userdata"
+    mke2fs -t ext4 "$metadata"
+    mke2fs -t ext4 "$cust"
+    echo "USERDATA format done!"
+    exit 0
+fi
+
 #normally format both
 echo "Formatting ESP and WIN partitions..."
 force_umount "$esppart"

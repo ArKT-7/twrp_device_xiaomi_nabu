@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /build/make/core/Makefile /build/make/core/Makefile
---- /build/make/core/Makefile	2025-07-17 14:42:09.199675558 +0530
-+++ /build/make/core/Makefile	2025-07-23 22:10:06.697222899 +0530
+--- /build/make/core/Makefile	2025-10-02 18:26:50.776310454 +0530
++++ /build/make/core/Makefile	2025-10-05 05:00:39.920981786 +0530
 @@ -2265,7 +2265,7 @@
  	  cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.wipe)
  	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop

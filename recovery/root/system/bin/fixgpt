@@ -1,4 +1,6 @@
 #!/sbin/bash
+ignorekrjy=true
 . common
+
 fixgpt
 echo "done!"
