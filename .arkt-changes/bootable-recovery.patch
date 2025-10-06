@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-10-02 18:26:49.148914658 +0530
-+++ /bootable/recovery/data.cpp	2025-10-05 05:00:39.906753062 +0530
++++ /bootable/recovery/data.cpp	2025-10-07 01:08:31.577337933 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-10-02 18:26:49.160562466 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-10-05 05:00:39.907340900 +0530
++++ /bootable/recovery/gui/action.cpp	2025-10-07 01:08:31.577739109 +0530
 @@ -210,6 +210,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -333,7 +333,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-10-02 18:26:49.161306032 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-10-05 05:00:39.907750431 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-10-07 01:08:31.578062173 +0530
 @@ -335,6 +335,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -351,7 +351,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  	int fileexists(std::string arg);
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-10-02 18:26:49.214152373 +0530
-+++ /bootable/recovery/openrecoveryscript.cpp	2025-10-05 07:18:13.615703803 +0530
++++ /bootable/recovery/openrecoveryscript.cpp	2025-10-07 01:08:31.578263877 +0530
 @@ -81,8 +81,16 @@
  		// Delete the file from cache
  		unlink(orsFile.c_str());
@@ -373,23 +373,24 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  int OpenRecoveryScript::copy_script_file(string filename) {
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp.cpp	2025-10-05 07:18:17.092419905 +0530
-@@ -248,6 +248,14 @@
- 		OpenRecoveryScript::Run_OpenRecoveryScript();
- 	}
- 
++++ /bootable/recovery/twrp.cpp	2025-10-07 01:08:57.030022757 +0530
+@@ -225,6 +225,15 @@
+ #ifdef TW_INCLUDE_CRYPTO
+ 	android::keystore::copySqliteDb();
+ #endif
++
 +	// Run Custom OpenRecoveryScript from cust partition "arkt" folder
 +	if (PartitionManager.Mount_By_Path("/cust", false)) {
 +		std::string orsFile = "/cust/arkt/openrecoveryscript";
-+		if ((DataManager::GetIntValue(TW_IS_ENCRYPTED) == 0 || skip_decryption) && TWFunc::Path_Exists(orsFile)) {
++		if (TWFunc::Path_Exists(orsFile)) {
 +			OpenRecoveryScript::Run_OpenRecoveryScript();
 +		}
 +	}
 +
- #ifdef TW_HAS_MTP
- 	char mtp_crash_check[PROPERTY_VALUE_MAX];
- 	property_get("mtp.crash_check", mtp_crash_check, "0");
-@@ -475,6 +483,8 @@
+ 	Decrypt_Page(skip_decryption, datamedia);
+ 
+ 	// Check for and load custom theme if present
+@@ -475,6 +484,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
  
@@ -398,7 +399,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	twrpAdbBuFifo *adb_bu_fifo = new twrpAdbBuFifo();
  	TWFunc::Clear_Bootloader_Message();
  
-@@ -491,7 +501,7 @@
+@@ -491,7 +502,7 @@
  	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
  	GUIConsole::Translate_Now();
  
@@ -409,7 +410,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-10-05 05:00:39.908391179 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-10-07 01:08:31.578683419 +0530
 @@ -1659,4 +1659,313 @@
  	return ret;
  }
@@ -726,7 +727,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-10-05 05:00:39.908728064 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-10-07 01:08:31.578950276 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -741,7 +742,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-10-02 18:26:49.263513874 +0530
-+++ /bootable/recovery/variables.h	2025-10-05 05:00:39.908885682 +0530
++++ /bootable/recovery/variables.h	2025-10-07 01:08:31.579059788 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
