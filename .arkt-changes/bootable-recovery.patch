@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-10-02 18:26:49.148914658 +0530
-+++ /bootable/recovery/data.cpp	2025-10-07 01:02:24.485113554 +0530
++++ /bootable/recovery/data.cpp	2025-10-08 19:45:09.457131009 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-10-02 18:26:49.160562466 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-10-07 01:02:24.485599625 +0530
++++ /bootable/recovery/gui/action.cpp	2025-10-08 19:45:09.457131009 +0530
 @@ -210,6 +210,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -321,7 +321,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +}
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-10-02 18:26:49.161306032 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-10-07 01:02:24.486136220 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-10-08 19:45:09.457131009 +0530
 @@ -335,6 +335,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -1118,18 +1118,55 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/theme/extra-languages/language
 -</language>
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-10-02 18:26:49.214152373 +0530
-+++ /bootable/recovery/openrecoveryscript.cpp	2025-10-07 01:02:24.486616832 +0530
-@@ -81,8 +81,16 @@
- 		// Delete the file from cache
- 		unlink(orsFile.c_str());
- 		return 1;
++++ /bootable/recovery/openrecoveryscript.cpp	2025-10-08 19:45:14.073791879 +0530
+@@ -62,27 +62,34 @@
+ #define SCRIPT_COMMAND_SIZE 512
+ 
+ int OpenRecoveryScript::check_for_script_file(void) {
+-	std::string logDir = TWFunc::get_log_dir();
+-	std::string orsFile;
+-	if (logDir == DATA_LOGS_DIR)
+-		orsFile = "/data/cache";
+-	else
+-		orsFile = logDir;
+-	orsFile += "/recovery/openrecoveryscript";
+-	if (!PartitionManager.Mount_By_Path(orsFile, false)) {
+-		LOGINFO("Unable to mount %s for OpenRecoveryScript support.\n", logDir.c_str());
+-		gui_msg(Msg(msg::kError, "unable_to_mount=Unable to mount {1}")(logDir.c_str()));
+-		return 0;
+-	}
+-	if (TWFunc::Path_Exists(orsFile)) {
+-		LOGINFO("Script file found: '%s'\n", orsFile.c_str());
+-		// Copy script file to /tmp
+-		TWFunc::copy_file(orsFile, SCRIPT_FILE_TMP, 0755);
+-		// Delete the file from cache
+-		unlink(orsFile.c_str());
+-		return 1;
 -	}
 -	return 0;
++    std::string orsFile = "/cust/arkt/openrecoveryscript";
++    if (TWFunc::Path_Exists(orsFile)) {
++        LOGINFO("Script file found: '%s'\n", orsFile.c_str());
++        TWFunc::copy_file(orsFile, SCRIPT_FILE_TMP, 0755);
++        unlink(orsFile.c_str());
++        return 1;
 +    } else {
-+        orsFile = "/cust/arkt/openrecoveryscript";
++        std::string logDir = TWFunc::get_log_dir();
++        if (logDir == DATA_LOGS_DIR)
++            orsFile = "/data/cache";
++        else
++            orsFile = logDir;
++        orsFile += "/recovery/openrecoveryscript";
++        if (!PartitionManager.Mount_By_Path(orsFile, false)) {
++            LOGINFO("Unable to mount %s for OpenRecoveryScript support.\n", logDir.c_str());
++            gui_msg(Msg(msg::kError, "unable_to_mount=Unable to mount {1}")(logDir.c_str()));
++            return 0;
++        }
 +        if (TWFunc::Path_Exists(orsFile)) {
 +            LOGINFO("Script file found: '%s'\n", orsFile.c_str());
++            // Copy script file to /tmp
 +            TWFunc::copy_file(orsFile, SCRIPT_FILE_TMP, 0755);
++            // Delete the file from cache
 +            unlink(orsFile.c_str());
 +            return 1;
 +        }
@@ -1140,7 +1177,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  int OpenRecoveryScript::copy_script_file(string filename) {
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp.cpp	2025-10-07 01:03:19.397183454 +0530
++++ /bootable/recovery/twrp.cpp	2025-10-08 19:45:09.460464338 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -1177,7 +1214,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-10-07 01:02:24.487249528 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-10-08 19:45:09.460464338 +0530
 @@ -1659,4 +1659,310 @@
  	return ret;
  }
@@ -1491,7 +1528,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-10-07 01:02:24.487615531 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-10-08 19:45:09.460464338 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -1506,7 +1543,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-10-02 18:26:49.263513874 +0530
-+++ /bootable/recovery/variables.h	2025-10-07 01:02:24.487750665 +0530
++++ /bootable/recovery/variables.h	2025-10-08 19:45:09.460464338 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
