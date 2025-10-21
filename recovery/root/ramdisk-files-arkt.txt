@@ -395,6 +395,7 @@ system/lib64/libc.so
 system/lib64/libjsoncpp.so
 system/lib64/libext2_e2p.so
 system/lib64/android.hardware.fastboot@1.0.so
+system/lib64/android.hardware.vibrator-V2-ndk.so
 system/lib64/android.hardware.vibrator-V2-ndk_platform.so
 system/lib64/android.hardware.weaver@1.0.so
 system/lib64/libfuse-lite.so
@@ -3632,6 +3633,7 @@ system/bin/fsck.f2fs
 system/bin/sha256sum
 system/bin/iconv
 system/bin/mke2fs
+system/bin/fixvb
 system/bin/lpmake
 system/bin/magiskboot
 system/bin/sha1sum

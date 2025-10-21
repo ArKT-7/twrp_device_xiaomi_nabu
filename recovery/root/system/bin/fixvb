@@ -1,0 +1,135 @@
+#!/bin/sh
+
+WORK_DIR="/tmp/arkt-magic-vb-fix"
+CURRENT_SLOT=$(getprop ro.boot.slot_suffix | tr -d '_')
+if [ "$CURRENT_SLOT" = "a" ]; then
+  OTHER_SLOT="b"
+else
+  OTHER_SLOT="a"
+fi
+
+echo "backuping up..."
+dd if=/dev/block/by-name/vendor_boot_a of=/sdcard/vendor_boot_a.img bs=1M
+dd if=/dev/block/by-name/vendor_boot_b of=/sdcard/vendor_boot_b.img bs=1M
+
+fix_vendor_boot_slot() {
+  SLOT=$1
+  echo "Fixing vendor_boot on slot: $SLOT"
+
+  VBOOT_PART="/dev/block/by-name/vendor_boot_$SLOT"
+  SLOT_DIR="$WORK_DIR/$SLOT"
+
+  rm -rf "$SLOT_DIR"
+  mkdir -p "$SLOT_DIR"
+  cd "$SLOT_DIR"
+
+  echo "Dumping vendor_boot partition for slot $SLOT..."
+  dd if="$VBOOT_PART" of=vendor_boot.img bs=1M || {
+    echo "Warning: Failed to dump vendor_boot for slot $SLOT — skipping."
+    return 0
+  }
+
+  echo "Unpacking vendor_boot.img..."
+  magiskboot unpack vendor_boot.img || {
+    echo "Warning: Failed to unpack vendor_boot.img for slot $SLOT — skipping."
+    return 0
+  }
+
+  echo "Extracting ramdisk contents..."
+  mkdir ramdisk_contents
+  cd ramdisk_contents
+  cpio -idmv < ../ramdisk.cpio 2> "$SLOT_DIR/cpio_err.log"
+  grep -v "cpio: .: File exists" "$SLOT_DIR/cpio_err.log" > "$SLOT_DIR/cpio_filtered_err.log"
+  if [ -s "$SLOT_DIR/cpio_filtered_err.log" ]; then
+    echo "Warning: Real extraction errors found for slot $SLOT:"
+    cat "$SLOT_DIR/cpio_filtered_err.log" >&2
+    echo "Skipping remaining steps for slot $SLOT."
+    return 0
+  fi
+
+  mkdir -p first_stage_ramdisk
+  fstab_file=$(find . -type f -name "fstab.qcom" -not -path "./first_stage_ramdisk/*" | head -n 1)
+  if [ -z "$fstab_file" ]; then
+    echo "fstab.qcom not found outside. Searching inside first_stage_ramdisk..."
+    fstab_file=$(find ./first_stage_ramdisk -type f -name "fstab.qcom" | head -n 1)
+  else
+    echo "Deleting any fstab.qcom files inside first_stage_ramdisk..."
+    if [ -d "first_stage_ramdisk" ]; then
+      find first_stage_ramdisk -type f -name "fstab.qcom" -exec rm -v {} \;
+    fi
+  fi
+  if [ -n "$fstab_file" ]; then
+    mv "$fstab_file" first_stage_ramdisk/
+    echo "Moved $fstab_file to first_stage_ramdisk/"
+  else
+    echo "No fstab.qcom found — generating default for slot $SLOT."
+    cat > first_stage_ramdisk/fstab.qcom <<'EOF'
+# The filesystem that contains the filesystem checker binary (typically /system) cannot
+# specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
+
+#TODO: ArKT Add 'check' as fs_mgr_flags with data partition.
+# Currently we dont have e2fsck compiled. So fs check would failed.
+
+#<src>                                                 <mnt_point>            <type>  <mnt_flags and options>                            <fs_mgr_flags>
+system                                                  /system                erofs   ro                                                   wait,slotselect,avb=vbmeta_system,logical,first_stage_mount,avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
+system                                                  /system                ext4    ro,barrier=1,discard                                 wait,slotselect,avb=vbmeta_system,logical,first_stage_mount,avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
+system_ext                                              /system_ext            erofs   ro                                                   wait,slotselect,avb=vbmeta_system,logical,first_stage_mount
+system_ext                                              /system_ext            ext4    ro,barrier=1,discard                                 wait,slotselect,avb=vbmeta_system,logical,first_stage_mount
+product                                                 /product               erofs   ro                                                   wait,slotselect,avb=vbmeta_system,logical,first_stage_mount
+product                                                 /product               ext4    ro,barrier=1,discard                                 wait,slotselect,avb=vbmeta_system,logical,first_stage_mount
+vendor                                                  /vendor                erofs   ro                                                   wait,slotselect,avb,logical,first_stage_mount
+vendor                                                  /vendor                ext4    ro,barrier=1,discard                                 wait,slotselect,avb,logical,first_stage_mount
+odm                                                     /odm                   erofs   ro                                                   wait,slotselect,avb,logical,first_stage_mount
+odm                                                     /odm                   ext4    ro,barrier=1,discard                                 wait,slotselect,avb,logical,first_stage_mount
+mi_ext                                                  /mnt/vendor/mi_ext     ext4    ro,barrier=1,discard                                 wait,slotselect,avb=vbmeta,logical,first_stage_mount,nofail
+mi_ext                                                  /mnt/vendor/mi_ext     erofs   ro                                                   wait,slotselect,avb=vbmeta,logical,first_stage_mount,nofail
+/dev/block/by-name/metadata                             /metadata              ext4    noatime,nosuid,nodev,discard                         wait,check,formattable,wrappedkey,first_stage_mount
+/dev/block/bootdevice/by-name/boot                      /boot                  emmc    defaults                                             recoveryonly
+/dev/block/bootdevice/by-name/userdata                  /data                  f2fs    noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065,fsync_mode=nobarrier,inlinecrypt     latemount,wait,check,formattable,fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized+wrappedkey_v0,metadata_encryption=aes-256-xts:wrappedkey_v0,keydirectory=/metadata/vold/metadata_encryption,quota,reservedsize=128M,checkpoint=fs
+/dev/block/bootdevice/by-name/modem                     /vendor/firmware_mnt   vfat    ro,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337,context=u:object_r:firmware_file:s0 wait,slotselect
+/dev/block/bootdevice/by-name/dsp                       /vendor/dsp            ext4    ro,nosuid,nodev,barrier=1                            wait,slotselect
+/dev/block/bootdevice/by-name/persist                   /mnt/vendor/persist    ext4    noatime,nosuid,nodev,barrier=1                       wait,check
+/dev/block/bootdevice/by-name/bluetooth                 /vendor/bt_firmware    vfat    ro,shortname=lower,uid=1002,gid=3002,dmask=227,fmask=337,context=u:object_r:bt_firmware_file:s0 wait,slotselect
+# Need to have this entry in here even though the mount point itself is no longer needed.
+# The update_engine code looks for this entry in order to determine the boot device address
+# and fails if it does not find it.
+/dev/block/bootdevice/by-name/misc                      /misc                  emmc    defaults                                             defaults
+/devices/platform/soc/*.ssusb/*.dwc3/xhci-hcd.*.auto*   auto                   auto    defaults                                             wait,voldmanaged=usbotg:auto
+EOF
+    echo "Created default fstab.qcom in first_stage_ramdisk/ for slot $SLOT"
+  fi
+
+  echo "Repacking ramdisk..."
+  find . -mindepth 1 ! -path './first_stage_ramdisk' ! -path './first_stage_ramdisk/*' -exec rm -rf {} +
+  find . -mindepth 1 | cpio -o -H newc > ../new_ramdisk.cpio || {
+    echo "Warning: Failed to repack ramdisk for slot $SLOT — skipping."
+    return 0
+  }
+
+  cd "$SLOT_DIR"
+  mv new_ramdisk.cpio ramdisk.cpio
+  echo "Repacking vendor_boot.img..."
+  magiskboot repack vendor_boot.img || {
+    echo "Warning: Failed to repack vendor_boot.img for slot $SLOT — skipping."
+    return 0
+  }
+
+  echo "Flashing new vendor_boot for slot $SLOT..."
+  dd if=new-boot.img of="$VBOOT_PART" bs=1M && {
+    echo "Slot $SLOT successfully patched!"
+  } || {
+    echo "Warning: Failed to flash vendor_boot for slot $SLOT."
+    return 0
+  }
+
+  echo "Cleaning up temporary files for slot $SLOT..."
+  rm -f "$SLOT_DIR/cpio_err.log" "$SLOT_DIR/cpio_filtered_err.log" 2>/dev/null
+}
+
+echo "Current slot: $CURRENT_SLOT | Other slot: $OTHER_SLOT"
+fix_vendor_boot_slot "$CURRENT_SLOT" || echo "Note: Current slot $CURRENT_SLOT completed with warnings."
+fix_vendor_boot_slot "$OTHER_SLOT" || echo "Note: Other slot $OTHER_SLOT completed with warnings."
+
+echo "Cleaning up workspace..."
+cd /
+rm -rf "$WORK_DIR" 2>/dev/null
