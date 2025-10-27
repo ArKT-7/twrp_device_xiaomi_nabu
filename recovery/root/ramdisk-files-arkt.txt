@@ -396,6 +396,7 @@ system/lib64/libc.so
 system/lib64/libjsoncpp.so
 system/lib64/libext2_e2p.so
 system/lib64/android.hardware.fastboot@1.0.so
+system/lib64/android.hardware.vibrator-V2-ndk.so
 system/lib64/android.hardware.vibrator-V2-ndk_platform.so
 system/lib64/android.hardware.weaver@1.0.so
 system/lib64/libfuse-lite.so
@@ -3540,6 +3541,7 @@ system/bin/msc
 system/bin/avbctl
 system/bin/chcon
 system/bin/dos2unix
+system/bin/backupwin
 system/bin/common
 system/bin/echo
 system/bin/hwclock
@@ -3586,7 +3588,6 @@ system/bin/minadbd
 system/bin/chattr
 system/bin/du
 system/bin/android.hardware.keymaster@4.1-service-qti
-system/bin/stock_gpt
 system/bin/log
 system/bin/tzdata_twrp-timestamp
 system/bin/touch
@@ -3608,7 +3609,6 @@ system/bin/overrideprops.sh
 system/bin/modprobe
 system/bin/mknod
 system/bin/privapp-permissions-twrpapp.xml
-system/bin/formatdata
 system/bin/bash
 system/bin/tar
 system/bin/swapon
@@ -3626,6 +3626,12 @@ system/bin/erase_image
 system/bin/getevent
 system/bin/cmp
 system/bin/gdisk
+system/bin/gpt0
+system/bin/gpt1
+system/bin/gpt2
+system/bin/gpt3
+system/bin/gpt4
+system/bin/gpt5
 system/bin/strings
 system/bin/sha512sum
 system/bin/fmt
@@ -3643,6 +3649,8 @@ system/bin/xargs
 system/bin/fsck.f2fs
 system/bin/sha256sum
 system/bin/restore
+system/bin/restoregpt
+system/bin/restorewin
 system/bin/iconv
 system/bin/mke2fs
 system/bin/magiskboot
