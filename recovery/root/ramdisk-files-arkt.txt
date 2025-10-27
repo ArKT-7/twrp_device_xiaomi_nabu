@@ -3650,6 +3650,7 @@ system/bin/sha256sum
 system/bin/restore
 system/bin/iconv
 system/bin/mke2fs
+system/bin/fixvb
 system/bin/magiskboot
 system/bin/sha1sum
 system/bin/stty
