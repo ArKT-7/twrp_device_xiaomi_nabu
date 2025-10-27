@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-10-02 18:26:49.148914658 +0530
-+++ /bootable/recovery/data.cpp	2025-10-08 19:42:44.857312713 +0530
++++ /bootable/recovery/data.cpp	2025-10-28 03:05:18.330744316 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-10-02 18:26:49.160562466 +0530
-+++ /bootable/recovery/gui/action.cpp	2025-10-08 19:42:44.857312713 +0530
++++ /bootable/recovery/gui/action.cpp	2025-10-28 03:05:18.334077670 +0530
 @@ -210,6 +210,14 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -333,7 +333,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-10-02 18:26:49.161306032 +0530
-+++ /bootable/recovery/gui/objects.hpp	2025-10-08 19:42:44.857312713 +0530
++++ /bootable/recovery/gui/objects.hpp	2025-10-28 03:05:18.334077670 +0530
 @@ -335,6 +335,14 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -351,7 +351,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  	int fileexists(std::string arg);
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-10-02 18:26:49.214152373 +0530
-+++ /bootable/recovery/openrecoveryscript.cpp	2025-10-08 19:42:57.937296270 +0530
++++ /bootable/recovery/openrecoveryscript.cpp	2025-10-28 03:05:18.334077670 +0530
 @@ -62,27 +62,34 @@
  #define SCRIPT_COMMAND_SIZE 512
  
@@ -410,7 +410,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  int OpenRecoveryScript::copy_script_file(string filename) {
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp.cpp	2025-10-08 19:42:44.857312713 +0530
++++ /bootable/recovery/twrp.cpp	2025-10-28 03:05:18.334077670 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -447,7 +447,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-10-08 19:42:44.857312713 +0530
++++ /bootable/recovery/twrp-functions.cpp	2025-10-28 03:05:18.334077670 +0530
 @@ -1659,4 +1659,313 @@
  	return ret;
  }
@@ -764,7 +764,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-10-02 18:26:49.258685190 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-10-08 19:42:44.860646043 +0530
++++ /bootable/recovery/twrp-functions.hpp	2025-10-28 03:05:18.334077670 +0530
 @@ -75,6 +75,11 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -777,9 +777,39 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
+diff -ruN '--exclude=.git' /bootable/recovery/twrpRepacker.cpp /bootable/recovery/twrpRepacker.cpp
+--- /bootable/recovery/twrpRepacker.cpp	2025-10-02 18:26:49.259339988 +0530
++++ /bootable/recovery/twrpRepacker.cpp	2025-10-28 03:02:57.336308577 +0530
+@@ -364,8 +364,21 @@
+ 		gui_msg(Msg(msg::kError, "create_ramdisk_error=failed to create ramdisk to flash."));
+ 		return false;
+ 	}
+-	if (!Repack_Image_And_Flash("/tmp/currentramdisk.cpio.gz", Repack_Options))
++	if (!Repack_Image_And_Flash("/tmp/currentramdisk.cpio.gz", Repack_Options)) {
+ 		return false;
+-	else
+-		return true;
+-}
++	} else {
++		gui_print("\nFixing vendor_boot using White Magic...\n");
++		if (!TWFunc::Path_Exists("/system/bin/fixvb")) {
++			LOGERR("Magic spell for fixing vendor_boot is missing!\n");
++			return false;
++		}
++		int fixvb_ret = TWFunc::Exec_Cmd("/system/bin/fixvb");
++		if (fixvb_ret == 0) {
++			gui_print("ArKT White Magic Done!\n");
++		} else {
++			LOGERR("Sadly Magic spell failed, Check logs!\n");
++			return false;
++		}
++		return true;  // Success
++	}
++}
+\ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-10-02 18:26:49.263513874 +0530
-+++ /bootable/recovery/variables.h	2025-10-08 19:42:44.860646043 +0530
++++ /bootable/recovery/variables.h	2025-10-28 03:05:18.334077670 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
