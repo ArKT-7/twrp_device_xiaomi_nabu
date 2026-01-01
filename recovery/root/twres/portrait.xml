@@ -209,7 +209,7 @@
 				<text>{@install_btn=Install}</text>
 				<actions>
 					<action function="queueclear"/>
-					<action function="set">tw_selectimage=0</action>
+					<action function="set">tw_selectimage=2</action>
 					<action function="page">install</action>
 				</actions>
 			</button>
@@ -272,6 +272,12 @@
 				<text>{@install_image_hdr=Install Image}</text>
 			</text>
 
+			<text style="text_l">
+				<condition var1="tw_selectimage" var2="2"/>
+				<placement x="%col1_x_header%" y="%row3_header_y%"/>
+				<text>Install Zip/Image</text>
+			</text>
+
 			<text style="text_m">
 				<placement x="%col1_x_header%" y="%row4_header_y%"/>
 				<text>{@select_file_from_storage=Select File from %tw_storage_display_name% (%tw_storage_free_size% MB)}</text>
@@ -300,6 +306,17 @@
 				<selection name="tw_file"/>
 			</fileselector>
 
+			<fileselector>
+				<condition var1="tw_selectimage" var2="2"/>
+				<placement x="%indent%" y="%row3_y%" w="%content_width%" h="%fileselector_install_height%"/>
+				<text>%tw_zip_location%</text>
+				<filter extn=".zip;.ozip;.ZIP;.OZIP;.img;.IMG" folders="1" files="1"/>
+				<prfxfilter prfx="Magisk-;Magisk_;Magisk.apk;MagiskAlpha.apk;MagiskDelta.apk;app-release.apk;app-debug.apk" folders="1" files="1"/>
+				<path name="tw_zip_location" default="/sdcard"/>
+				<data name="tw_filename"/>
+				<selection name="tw_file"/>
+			</fileselector>
+
 			<button style="main_button_half_height">
 				<placement x="%indent%" y="%row21a_y%"/>
 				<text>{@select_storage_btn=Select Storage}</text>
@@ -310,47 +327,41 @@
 			</button>
 
 			<button style="main_button_half_height">
-				<condition var1="tw_selectimage" var2="0"/>
-				<placement x="%center_x%" y="%row21a_y%"/>
-				<text>{@install_image_btn=Install Image}</text>
-				<actions>
-					<action function="set">tw_selectimage=1</action>
-					<action function="page">install</action>
-				</actions>
-			</button>
+                <condition var1="tw_selectimage" var2="2"/>
+                <placement x="%center_x%" y="%row21a_y%"/>
+                <text>Show Zips</text>
+                <actions>
+                    <action function="set">tw_selectimage=0</action>
+                    <action function="page">install</action>
+                </actions>
+            </button>
 
-			<button style="main_button_half_height">
-				<condition var1="tw_selectimage" var2="1"/>
-				<placement x="%center_x%" y="%row21a_y%"/>
-				<text>{@install_zip_btn=Install Zip}</text>
-				<actions>
-					<action function="set">tw_selectimage=0</action>
-					<action function="page">install</action>
-				</actions>
-			</button>
+            <button style="main_button_half_height">
+                <condition var1="tw_selectimage" var2="0"/>
+                <placement x="%center_x%" y="%row21a_y%"/>
+                <text>Show Images</text>
+                <actions>
+                    <action function="set">tw_selectimage=1</action>
+                    <action function="page">install</action>
+                </actions>
+            </button>
+
+            <button style="main_button_half_height">
+                <condition var1="tw_selectimage" var2="1"/>
+                <placement x="%center_x%" y="%row21a_y%"/>
+                <text>Show All (Zip/Img)</text>
+                <actions>
+                    <action function="set">tw_selectimage=2</action>
+                    <action function="page">install</action>
+                </actions>
+            </button>
 
 			<action>
-				<conditions>
-					<condition var1="tw_selectimage" var2="0"/>
-					<condition var1="tw_filename" op="modified"/>
-				</conditions>
-				<actions>
-					<action function="queuezip"/>
-					<action function="page">flash_confirm</action>
-				</actions>
-			</action>
-
-			<action>
-				<conditions>
-					<condition var1="tw_selectimage" var2="1"/>
-					<condition var1="tw_filename" op="modified"/>
-				</conditions>
-				<actions>
-					<action function="set">tw_is_slot_part=0</action>
-					<action function="set">tw_flash_both_slots=1</action>
-					<action function="page">flashimage_confirm</action>
-				</actions>
-			</action>
+                <conditions>
+                    <condition var1="tw_filename" op="modified"/>
+                </conditions>
+                <action function="installbyarkt"/>
+            </action>
 
 			<action>
 				<touch key="back"/>
@@ -730,6 +741,7 @@
 			<action>
 				<touch key="back"/>
 				<actions>
+					<action function="set">tw_flash_partition=</action>
 					<action function="set">tw_clear_destination=install</action>
 					<action function="page">clear_vars</action>
 				</actions>
@@ -738,6 +750,7 @@
 			<action>
 				<touch key="home"/>
 				<actions>
+					<action function="set">tw_flash_partition=</action>
 					<action function="set">tw_clear_destination=main2</action>
 					<action function="page">clear_vars</action>
 				</actions>
@@ -4942,9 +4955,102 @@
 				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
 			</fill>
 
+			<button style="checkbox">
+				<placement x="%indent%" y="%row5_y%" textplacement="6"/>
+				<text>Show Password</text>
+				<image resource="checkbox_false"/>
+				<actions>
+					<action function="set">tw_show_pass=1</action>
+					<action function="page">decrypt_visible</action>
+				</actions>
+			</button>
+
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
-				<placement x="%indent%" y="%row5_y%"/>
+				<placement x="%indent%" y="%row6a_y%"/>
+				<text>{@decrypt_data_failed=Password failed, please try again!}</text>
+			</text>
+
+			<button style="main_button_half_height">
+				<placement x="%indent%" y="%row10_y%"/>
+				<text>{@cancel_btn=Cancel}</text>
+				<action function="page">canceldecrypt</action>
+			</button>
+
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row10_y%"/>
+				<text>{@sel_lang_btn=Select Language}</text>
+				<action function="overlay">select_language</action>
+			</button>
+
+			<template name="keyboardtemplate"/>
+		</page>
+
+		<page name="decrypt_visible">
+			<template name="page"/>
+
+			<action>
+				<condition var1="tw_crypto_pwtype" var2="2"/>
+				<action function="page">decrypt_pattern</action>
+			</action>
+
+			<action>
+				<condition var1="tw_crypto_pwtype" var2="3"/>
+				<action function="page">decrypt_pin</action>
+			</action>
+
+			<text style="text_l">
+				<placement x="%col1_x_header%" y="%row3_header_y%"/>
+				<text>{@mount_hdr=Mount}</text>
+			</text>
+
+			<text style="text_m">
+				<placement x="%col1_x_header%" y="%row4_header_y%"/>
+				<text>{@decrypt_data_hdr=Decrypt Data}</text>
+			</text>
+
+			<text style="text_m_accent">
+				<condition var1="tw_is_fbe" op="!=" var2="1"/>
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>{@decrypt_data_enter_pass=Enter Password:}</text>
+			</text>
+
+			<text style="text_m_accent">
+				<condition var1="tw_is_fbe" var2="1"/>
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>{@decrypt_data_enter_pass_fbe=Enter Password for User [%tw_crypto_user_id%]}</text>
+			</text>
+
+			<input>
+				<placement x="%indent%" y="%row3_input_y%" w="%content_width%" h="%input_height%"/>
+				<text>%tw_crypto_display%</text>
+				<data name="tw_crypto_password"/>
+				<restrict minlen="1" maxlen="254"/>
+				<action function="page">trydecrypt</action>
+			</input>
+
+			<fill color="%accent_color%">
+				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<fill color="%text_fail_color%">
+				<condition var1="tw_password_fail" var2="1"/>
+				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<button style="checkbox">
+				<placement x="%indent%" y="%row5_y%" textplacement="6"/>
+				<text>Show Password</text>
+				<image resource="checkbox_true"/>
+				<actions>
+					<action function="set">tw_show_pass=0</action>
+					<action function="page">decrypt</action>
+				</actions>
+			</button>
+
+			<text style="text_m_fail">
+				<condition var1="tw_password_fail" var2="1"/>
+				<placement x="%indent%" y="%row6a_y%"/>
 				<text>{@decrypt_data_failed=Password failed, please try again!}</text>
 			</text>
 
@@ -5081,9 +5187,92 @@
 				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
 			</fill>
 
+			<button style="checkbox">
+				<placement x="%indent%" y="%row5_y%" textplacement="6"/>
+				<text>Show PIN</text>
+				<image resource="checkbox_false"/>
+				<actions>
+					<action function="set">tw_show_pass=1</action>
+					<action function="page">decrypt_pin_visible</action>
+				</actions>
+			</button>
+
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
-				<placement x="%indent%" y="%row5_y%"/>
+				<placement x="%indent%" y="%row6a_y%"/>
+				<text>{@decrypt_data_failed=PIN failed, please try again!}</text>
+			</text>
+
+			<button style="main_button_half_height">
+				<placement x="%indent%" y="%row10_y%"/>
+				<text>{@cancel_btn=Cancel}</text>
+				<action function="page">canceldecrypt</action>
+			</button>
+
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row10_y%"/>
+				<text>{@sel_lang_btn=Select Language}</text>
+				<action function="overlay">select_language</action>
+			</button>
+
+			<template name="keyboardnum"/>
+		</page>
+
+		<page name="decrypt_pin_visible">
+			<template name="page"/>
+
+			<text style="text_l">
+				<placement x="%col1_x_header%" y="%row3_header_y%"/>
+				<text>{@mount_hdr=Mount}</text>
+			</text>
+
+			<text style="text_m">
+				<placement x="%col1_x_header%" y="%row4_header_y%"/>
+				<text>{@decrypt_data_hdr=Decrypt Data}</text>
+			</text>
+
+			<text style="text_m_accent">
+				<condition var1="tw_is_fbe" op="!=" var2="1"/>
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>{@decrypt_data_enter_pass=Enter PIN:}</text>
+			</text>
+
+			<text style="text_m_accent">
+				<condition var1="tw_is_fbe" var2="1"/>
+				<placement x="%center_x%" y="%row2_y%" placement="5"/>
+				<text>{@decrypt_data_enter_pass_fbe=Enter PIN for User [%tw_crypto_user_id%]}</text>
+			</text>
+
+			<input>
+				<placement x="%indent%" y="%row3_input_y%" w="%content_width%" h="%input_height%"/>
+				<text>%tw_crypto_password%</text>
+				<data name="tw_crypto_password"/>
+				<restrict minlen="1" maxlen="254"/>
+				<action function="page">trydecrypt</action>
+			</input>
+
+			<fill color="%accent_color%">
+				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<fill color="%text_fail_color%">
+				<condition var1="tw_password_fail" var2="1"/>
+				<placement x="%indent%" y="row4a_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<button style="checkbox">
+				<placement x="%indent%" y="%row5_y%" textplacement="6"/>
+				<text>Show PIN</text>
+				<image resource="checkbox_true"/>
+				<actions>
+					<action function="set">tw_show_pass=0</action>
+					<action function="page">decrypt_pin</action>
+				</actions>
+			</button>
+
+			<text style="text_m_fail">
+				<condition var1="tw_password_fail" var2="1"/>
+				<placement x="%indent%" y="%row6a_y%"/>
 				<text>{@decrypt_data_failed=PIN failed, please try again!}</text>
 			</text>
 
@@ -5127,10 +5316,57 @@
 				<conditions>
 					<condition var1="tw_operation_state" var2="1"/>
 					<condition var1="tw_operation_status" op="!=" var2="0"/>
+					<condition var1="tw_show_pass" op="!=" var2="1"/>
+					<condition var1="tw_crypto_pwtype" var2="3"/>
 				</conditions>
 				<actions>
 					<action function="set">tw_password_fail=1</action>
+					<action function="set">tw_crypto_password=</action>
+					<action function="set">tw_crypto_display=</action>
+					<action function="page">decrypt_pin</action>
+				</actions>
+			</action>
+
+			<action>
+				<conditions>
+					<condition var1="tw_operation_state" var2="1"/>
+					<condition var1="tw_operation_status" op="!=" var2="0"/>
+					<condition var1="tw_show_pass" op="!=" var2="1"/>
+					<condition var1="tw_crypto_pwtype" op="!=" var2="3"/>
+				</conditions>
+				<actions>
+					<action function="set">tw_password_fail=1</action>
+					<action function="set">tw_crypto_password=</action>
+					<action function="set">tw_crypto_display=</action>
 					<action function="page">decrypt</action>
+				</actions>
+			</action>
+
+			<action>
+				<conditions>
+					<condition var1="tw_operation_state" var2="1"/>
+					<condition var1="tw_operation_status" op="!=" var2="0"/>
+					<condition var1="tw_show_pass" var2="1"/>
+					<condition var1="tw_crypto_pwtype" var2="3"/>
+				</conditions>
+				<actions>
+					<action function="set">tw_password_fail=1</action>
+					<action function="set">tw_crypto_password=</action>
+					<action function="page">decrypt_pin_visible</action>
+				</actions>
+			</action>
+
+			<action>
+				<conditions>
+					<condition var1="tw_operation_state" var2="1"/>
+					<condition var1="tw_operation_status" op="!=" var2="0"/>
+					<condition var1="tw_show_pass" var2="1"/>
+					<condition var1="tw_crypto_pwtype" op="!=" var2="3"/>
+				</conditions>
+				<actions>
+					<action function="set">tw_password_fail=1</action>
+					<action function="set">tw_crypto_password=</action>
+					<action function="page">decrypt_visible</action>
 				</actions>
 			</action>
 
