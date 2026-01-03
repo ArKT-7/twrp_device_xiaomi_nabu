@@ -33,12 +33,6 @@ PRODUCT_SHIPPING_API_LEVEL := 30
 # == A/B and Postinstall ==
 # ==================================================
 PRODUCT_PACKAGES += \
-    android.hardware.boot@1.1-impl-qti \
-    android.hardware.boot@1.1-impl-qti.recovery \
-    android.hardware.boot@1.1-service \
-    bootctrl.$(TARGET_BOARD_PLATFORM)\
-    bootctrl.$(TARGET_BOARD_PLATFORM).recovery \
-    libgptutils \
     libz \
     libcutils
 
@@ -87,13 +81,6 @@ PRODUCT_PACKAGES += \
 # ==================================================
 TARGET_SCREEN_HEIGHT := 2560
 TARGET_SCREEN_WIDTH := 1600
-
-# ==================================================
-# == Soong Namespaces ==
-# ==================================================
-PRODUCT_SOONG_NAMESPACES += \
-    $(LOCAL_PATH) \
-    hardware/qcom-caf/bootctrl
 
 # ==================================================
 # == TWRP UI Configuration ==
@@ -152,9 +139,7 @@ TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
 TARGET_RECOVERY_DEVICE_MODULES += \
     libion \
-    libandroidicu \
-    bootctrl.$(TARGET_BOARD_PLATFORM) \
-    bootctrl.$(TARGET_BOARD_PLATFORM).recovery
+    libandroidicu 
 
 RECOVERY_LIBRARY_SOURCE_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/libion.so
