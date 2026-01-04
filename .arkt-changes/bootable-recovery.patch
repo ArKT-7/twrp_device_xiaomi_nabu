@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-12-23 23:01:31.666380679 +0530
-+++ /bootable/recovery/data.cpp	2025-12-31 17:33:45.282617664 +0530
++++ /bootable/recovery/data.cpp	2026-01-04 01:59:00.430203578 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-12-23 23:01:31.673835823 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-01-01 04:29:33.389917131 +0530
++++ /bootable/recovery/gui/action.cpp	2026-01-04 01:59:00.431376832 +0530
 @@ -210,6 +210,8 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -379,7 +379,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-12-23 23:01:31.674480566 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-01-01 02:01:00.765599870 +0530
++++ /bootable/recovery/gui/objects.hpp	2026-01-04 01:59:00.432309286 +0530
 @@ -335,6 +335,8 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -389,9 +389,90 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/recovery/minuitwrp/events.cpp
+--- /bootable/recovery/minuitwrp/events.cpp	2025-12-23 23:01:31.703143963 +0530
++++ /bootable/recovery/minuitwrp/events.cpp	2026-01-04 07:52:56.146458212 +0530
+@@ -54,6 +54,7 @@
+ 
+ #include "minuitwrp/minui.h"
+ 
++extern unsigned int gr_rotation;
+ //#define _EVENT_LOGGING
+ 
+ #define MAX_DEVICES         32
+@@ -448,14 +449,24 @@
+     printf("EV: p->x=%d  x-range=%d,%d  fb-width=%d\n", p->x, p->xi.minimum, p->xi.maximum, gr_fb_width());
+ #endif
+ 
+-#ifndef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    int fb_width = gr_fb_width();
+-    int fb_height = gr_fb_height();
+-#else
+-    // We need to swap the scaling sizes, too
+-    int fb_width = gr_fb_height();
+-    int fb_height = gr_fb_width();
+-#endif
++    // ArKT MOD START, telegram - @ArKT_7, Github - https://github.com/ArKT-7: dynamic scaling
++    int fb_width, fb_height;
++
++    if (gr_rotation == 90 || gr_rotation == 270) {
++        fb_width = gr_fb_height();
++        fb_height = gr_fb_width();
++    } 
++    else {
++        #ifndef RECOVERY_TOUCHSCREEN_SWAP_XY
++            fb_width = gr_fb_width();
++            fb_height = gr_fb_height();
++        #else
++            // If defined in dt, swap the scaling dimensions
++            fb_width = gr_fb_height();
++            fb_height = gr_fb_width();
++        #endif
++    }
++    // ArKT MOD END 
+ 
+     *x = (p->x - p->xi.minimum) * (fb_width - 1) / (p->xi.maximum - p->xi.minimum);
+     *y = (p->y - p->yi.minimum) * (fb_height - 1) / (p->yi.maximum - p->yi.minimum);
+@@ -734,10 +745,33 @@
+         return 1;
+     }
+ 
++    // ArKT MOD START, telegram - @ArKT_7, Github - https://github.com/ArKT-7: Dynamic rotation link
++    bool rotation_applied = false; 
++    if (gr_rotation == 90) {
++        int temp = x;
++        x = y;
++        y = gr_fb_height() - temp;
++        rotation_applied = true;
++    }
++    else if (gr_rotation == 270) {
++        int temp = x;
++        x = gr_fb_width() - y;
++        y = temp;
++        rotation_applied = true;
++    }
++    else if (gr_rotation == 180) {
++        x = gr_fb_width() - x;
++        y = gr_fb_height() - y;
++        rotation_applied = true;
++    }
++
+ #ifdef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    x ^= y;
+-    y ^= x;
+-    x ^= y;
++    if (!rotation_applied) {
++        x ^= y;
++        y ^= x;
++        x ^= y;
++    }
++// ArKT MOD END 
+ #endif
+ #ifdef RECOVERY_TOUCHSCREEN_FLIP_X
+     x = gr_fb_width() - x;
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-12-23 23:01:31.707604645 +0530
-+++ /bootable/recovery/openrecoveryscript.cpp	2025-12-31 17:33:45.284027419 +0530
++++ /bootable/recovery/openrecoveryscript.cpp	2026-01-04 01:59:00.433036894 +0530
 @@ -62,27 +62,34 @@
  #define SCRIPT_COMMAND_SIZE 512
  
@@ -450,7 +531,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  int OpenRecoveryScript::copy_script_file(string filename) {
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp.cpp	2025-12-31 17:33:45.284245991 +0530
++++ /bootable/recovery/twrp.cpp	2026-01-04 01:59:00.433588334 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -487,7 +568,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2025-12-31 17:33:45.284550419 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-01-04 07:54:39.107064433 +0530
 @@ -1659,4 +1659,91 @@
  	return ret;
  }
@@ -582,7 +663,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2025-12-31 17:33:45.284836116 +0530
++++ /bootable/recovery/twrp-functions.hpp	2026-01-04 01:59:00.435177365 +0530
 @@ -75,6 +75,7 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -593,7 +674,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/twrpRepacker.cpp /bootable/recovery/twrpRepacker.cpp
 --- /bootable/recovery/twrpRepacker.cpp	2025-12-23 23:01:31.724043892 +0530
-+++ /bootable/recovery/twrpRepacker.cpp	2025-12-31 17:33:45.284976808 +0530
++++ /bootable/recovery/twrpRepacker.cpp	2026-01-04 01:59:00.435464813 +0530
 @@ -364,8 +364,21 @@
  		gui_msg(Msg(msg::kError, "create_ramdisk_error=failed to create ramdisk to flash."));
  		return false;
@@ -623,7 +704,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrpRepacker.cpp /bootable/recover
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-12-23 23:01:31.726687626 +0530
-+++ /bootable/recovery/variables.h	2025-12-31 17:33:45.285096406 +0530
++++ /bootable/recovery/variables.h	2026-01-04 01:59:00.436131408 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
