@@ -15,10 +15,6 @@ env:
   DEVICE_TREE_BRANCH: mod-linux
   DEVICE_PATH: device/xiaomi/nabu
 
-  KERNEL_URL: https://github.com/Kfkcome/android_kernel_xiaomi_nabu.git
-  KERNEL_BRANCH: "14.0"
-  KERNEL_PATH: kernel/xiaomi/nabu
-
   DEVICE_NAME: nabu
   MAKEFILE_NAME: twrp_nabu
 
@@ -55,8 +51,7 @@ jobs:
     - name: Setup SSH Keys (if needed)
       if: |
         startsWith(env.MANIFEST_URL, 'git@github.com') ||
-        startsWith(env.DEVICE_TREE_URL, 'git@github.com') ||
-        startsWith(env.KERNEL_URL, 'git@github.com')
+        startsWith(env.DEVICE_TREE_URL, 'git@github.com')
       uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -79,11 +74,6 @@ jobs:
     - name: Clone Device Tree
       run: |
         git clone "$DEVICE_TREE_URL" -b "$DEVICE_TREE_BRANCH" "$DEVICE_PATH"
-      working-directory: arkt
-
-    - name: Clone Kernel
-      run: |
-        git clone --depth=1 "$KERNEL_URL" -b "$KERNEL_BRANCH" "$KERNEL_PATH"
       working-directory: arkt
 
     - name: Set Swap Space
