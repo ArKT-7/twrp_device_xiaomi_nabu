@@ -4840,6 +4840,16 @@ edi				<conditions>
 				</actions>
 			</button>
 
+			<button style="main_button_half_width_low">
+                <placement x="%row6_y%" y="%row6_y%"/>
+                <text>Clear</text>
+                <actions>
+                    <action function="set">tw_crypto_password=</action>
+                    <action function="set">tw_crypto_display=</action>
+					<action function="page">decrypt</action>
+                </actions>
+            </button>
+
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
 				<placement x="%col1_x_left%" y="%row5_y%"/>
@@ -4922,6 +4932,16 @@ edi				<conditions>
 					<action function="page">decrypt</action>
 				</actions>
 			</button>
+
+			<button style="main_button_half_width_low">
+                <placement x="%row6_y%" y="%row6_y%"/>
+                <text>Clear</text>
+                <actions>
+                    <action function="set">tw_crypto_password=</action>
+                    <action function="set">tw_crypto_display=</action>
+					<action function="page">decrypt_visible</action>
+                </actions>
+            </button>
 
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
@@ -5065,6 +5085,16 @@ edi				<conditions>
 				</actions>
 			</button>
 
+			<button style="main_button_half_width_low">
+                <placement x="%row6_y%" y="%row6_y%"/>
+                <text>Clear</text>
+                <actions>
+                    <action function="set">tw_crypto_password=</action>
+                    <action function="set">tw_crypto_display=</action>
+					<action function="page">decrypt_pin</action>
+                </actions>
+            </button>
+
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
 				<placement x="%col1_x_left%" y="%row5_y%"/>
@@ -5138,6 +5168,16 @@ edi				<conditions>
 				</actions>
 			</button>
 
+			<button style="main_button_half_width_low">
+                <placement x="%row6_y%" y="%row6_y%"/>
+                <text>Clear</text>
+                <actions>
+                    <action function="set">tw_crypto_password=</action>
+                    <action function="set">tw_crypto_display=</action>
+					<action function="page">decrypt_pin_visible</action>
+                </actions>
+            </button>
+
 			<text style="text_m_fail">
 				<condition var1="tw_password_fail" var2="1"/>
 				<placement x="%col1_x_left%" y="%row5_y%"/>
@@ -5189,8 +5229,6 @@ edi				<conditions>
 				</conditions>
 				<actions>
 					<action function="set">tw_password_fail=1</action>
-					<action function="set">tw_crypto_password=</action>
-					<action function="set">tw_crypto_display=</action>
 					<action function="page">decrypt_pin</action>
 				</actions>
 			</action>
@@ -5204,8 +5242,6 @@ edi				<conditions>
 				</conditions>
 				<actions>
 					<action function="set">tw_password_fail=1</action>
-					<action function="set">tw_crypto_password=</action>
-					<action function="set">tw_crypto_display=</action>
 					<action function="page">decrypt</action>
 				</actions>
 			</action>
@@ -5219,7 +5255,6 @@ edi				<conditions>
 				</conditions>
 				<actions>
 					<action function="set">tw_password_fail=1</action>
-					<action function="set">tw_crypto_password=</action>
 					<action function="page">decrypt_pin_visible</action>
 				</actions>
 			</action>
@@ -5233,7 +5268,6 @@ edi				<conditions>
 				</conditions>
 				<actions>
 					<action function="set">tw_password_fail=1</action>
-					<action function="set">tw_crypto_password=</action>
 					<action function="page">decrypt_visible</action>
 				</actions>
 			</action>
