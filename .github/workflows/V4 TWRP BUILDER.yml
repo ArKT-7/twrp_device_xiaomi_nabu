@@ -1,8 +1,8 @@
 name: V4-MODDED TWRP BUILD
 
 on:
-  push:
-    branches: [ "mod-normal" ]
+  # push:
+  #   branches: [ "mod-normal" ]
 
   workflow_dispatch:
   
