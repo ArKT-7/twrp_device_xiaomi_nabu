@@ -3544,7 +3544,7 @@ system/bin/expand
 system/bin/toolbox
 system/bin/groups
 system/bin/twrp
-system/bin/pdumper
+system/bin/otaripper
 system/bin/true
 system/bin/umount
 system/bin/logd

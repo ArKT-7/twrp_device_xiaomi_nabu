@@ -22,7 +22,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -1074,6 +1076,272 @@
+@@ -1074,6 +1076,278 @@
  	int i, ret_val = 0, wipe_cache = 0;
  	// We're going to jump to this page first, like a loading page
  	gui_changePage(arg);
@@ -103,7 +103,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +
 +		gui_print("Verifying payload.bin...");
 +		gui_print(" ");
-+		std::string analyze_cmd = "/system/bin/pdumper -l /sdcard/arkt-magic/payload.bin";
++		std::string analyze_cmd = "/system/bin/otaripper -l /sdcard/arkt-magic/payload.bin";
 +		std::string payload_out;
 +		if (TWFunc::Exec_Cmd(analyze_cmd, payload_out, true) != 0 || payload_out.empty()) {
 +			LOGERR("Error!! Failed to analyze payload.bin");
@@ -114,7 +114,11 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			operation_end(1);
 +			return 1;
 +		}
-+		gui_print("%s\n", payload_out.c_str());
++		std::istringstream stream(payload_out);
++		std::string line;
++		while (std::getline(stream, line)) {
++			gui_print("%s\n", line.c_str());
++		}
 +
 +		std::vector<std::string> required_parts = {
 +			"boot", "dtbo", "odm", "product", "system",
@@ -143,7 +147,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		gui_print("payload.bin contains all required images");
 +
 +		gui_print("\nExtracting images from payload.bin...");
-+		std::string dump_cmd = "/system/bin/pdumper -o /sdcard/arkt-magic/ /sdcard/arkt-magic/payload.bin";
++		std::string dump_cmd = "/system/bin/otaripper -n -o /sdcard/arkt-magic/ /sdcard/arkt-magic/payload.bin";
 +		std::string dump_out;
 +		if (TWFunc::Exec_Cmd(dump_cmd, true) != 0) {
 +			LOGERR("Error!! Failed to extract payload.bin images");
@@ -154,6 +158,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			operation_end(1);
 +			return 1;
 +		}
++		TWFunc::Exec_Cmd("mv /sdcard/arkt-magic/extracted_*/* /sdcard/arkt-magic/");
++		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/extracted_*");
 +		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/payload.bin");
 +
 +		gui_print("Building super.img...");
