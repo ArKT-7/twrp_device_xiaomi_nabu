@@ -495,9 +495,9 @@
 				<text>%tw_file%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<condition var1="tw_operation_state" var2="1"/>
@@ -525,7 +525,7 @@
 				<text>{@successful=Successful}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install"/>
 
 			<button style="main_button_half_height">
 				<condition var1="tw_ab_device" var2="0"/>
@@ -624,13 +624,13 @@
 				<text>{@install_reboot=Rebooting in %tw_sleep% second(s)}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install"/>
 
 			<button style="main_button_half_height">
 				<condition var1="tw_sleep" op="&gt;" var2="0"/>
-				<placement x="%center_x%" y="%row21a_y%"/>
+				<placement x="%center_x%" y="%row22a_y%"/>
 				<text>{@cancel_btn=Cancel}</text>
 				<actions>
 					<action function="set">tw_install_reboot=0</action>
