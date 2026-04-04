@@ -163,7 +163,6 @@ vendor/etc/selinux/vndservice_contexts
 vendor/etc/vintf
 vendor/etc/vintf/manifest
 vendor/etc/vintf/manifest/power.xml
-vendor/etc/vintf/manifest/vendor.qti.hardware.vibrator.service.xml
 vendor/etc/vintf/manifest/android.hardware.boot@1.1.xml
 vendor/etc/vintf/manifest/android.hardware.boot@1.2.xml
 vendor/etc/vintf/manifest/android.hardware.health@2.1.xml
@@ -390,21 +389,17 @@ system/lib64/libsoftkeymasterdevice.so
 system/lib64/libsysutils.so
 system/lib64/android.system.suspend@1.0.so
 system/lib64/libpcre2.so
-system/lib64/android.hardware.vibrator-V1-ndk_platform.so
 system/lib64/libblkid.so
 system/lib64/android.hidl.token@1.0.so
 system/lib64/libc.so
 system/lib64/libjsoncpp.so
 system/lib64/libext2_e2p.so
 system/lib64/android.hardware.fastboot@1.0.so
-system/lib64/android.hardware.vibrator-V2-ndk.so
-system/lib64/android.hardware.vibrator-V2-ndk_platform.so
 system/lib64/android.hardware.weaver@1.0.so
 system/lib64/libfuse-lite.so
 system/lib64/libssh.so
 system/lib64/lib_android_keymaster_keymint_utils.so
 system/lib64/libkeymint.so
-system/lib64/android.hardware.vibrator@1.0.so
 system/lib64/libtinyxml2.so
 system/lib64/libsync.so
 system/lib64/libbinder.so
@@ -427,7 +422,6 @@ system/lib64/android.hardware.gatekeeper@1.0.so
 system/lib64/libicuuc.so
 system/lib64/libkeystore-attestation-application-id.so
 system/lib64/android.hardware.boot@1.1.so
-system/lib64/android.hardware.vibrator-V1-cpp.so
 system/lib64/libgatekeeper.so
 system/lib64/android.security.apc-ndk_platform.so
 system/lib64/libhidltransport.so
@@ -446,7 +440,6 @@ system/lib64/libziparchive.so
 system/lib64/android.security.authorization-ndk_platform.so
 system/lib64/libhidlbase.so
 system/lib64/libgpt_twrp.so
-system/lib64/android.hardware.vibrator@1.1.so
 system/lib64/libunwindstack.so
 system/lib64/libfusesideload.so
 system/lib64/libfscrypttwrp.so
@@ -484,7 +477,6 @@ system/lib64/libresetprop.so
 system/lib64/libtar.so
 system/lib64/libhardware.so
 system/lib64/libfec.so
-system/lib64/android.hardware.vibrator-V2-cpp.so
 system/lib64/libsoft_attestation_cert.so
 system/lib64/android.hardware.health@2.0.so
 system/lib64/libext2_com_err.so
@@ -516,7 +508,6 @@ system/lib64/libcrecovery.so
 system/lib64/libcgrouprc.so
 system/lib64/libexfat_twrp.so
 system/lib64/libutilscallstack.so
-system/lib64/android.hardware.vibrator@1.2.so
 system/lib64/libext2_blkid.so
 system/lib64/libkeystore2_aaid.so
 system/lib64/libext2_profile.so

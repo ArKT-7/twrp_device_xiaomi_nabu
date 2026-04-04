@@ -424,6 +424,36 @@
 			</animation>
 		</template>
 
+		<template name="progress_bar_install">
+			<progressbar>
+				<placement x="%indent%" y="%row21a_y%"/>
+				<resource empty="progress_empty" full="progress_full"/>
+				<data name="ui_progress"/>
+			</progressbar>
+
+			<animation>
+				<placement x="%indent%" y="%row21a_y%"/>
+				<resource name="progress"/>
+				<speed fps="24" render="2"/>
+				<loop frame="1"/>
+			</animation>
+		</template>
+
+		<template name="progress_bar_install_max">
+			<progressbar>
+				<placement x="%indent%" y="%row24a_y%"/>
+				<resource empty="progress_empty" full="progress_full"/>
+				<data name="ui_progress"/>
+			</progressbar>
+
+			<animation>
+				<placement x="%indent%" y="%row24a_y%"/>
+				<resource name="progress"/>
+				<speed fps="24" render="2"/>
+				<loop frame="1"/>
+			</animation>
+		</template>
+
 		<template name="sort_options">
 			<image>
 				<placement x="%indent%" y="%row1a_y%"/>
@@ -605,6 +635,34 @@
 
 			<fill color="%fileselector_linecolor%">
 				<placement x="%indent%" y="row17_y" w="%content_width%" h="input_line_width"/>
+			</fill>
+		</template>
+
+		<template name="console_install">
+			<console>
+				<placement x="%indent%" y="%row2_y%" w="%content_width%" h="1216"/>
+			</console>
+
+			<fill color="%fileselector_linecolor%">
+				<placement x="%indent%" y="row2_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<fill color="%fileselector_linecolor%">
+				<placement x="%indent%" y="row21_y" w="%content_width%" h="input_line_width"/>
+			</fill>
+		</template>
+
+		<template name="console_install_max">
+			<console>
+				<placement x="%indent%" y="%row2_y%" w="%content_width%" h="1408"/>
+			</console>
+
+			<fill color="%fileselector_linecolor%">
+				<placement x="%indent%" y="row2_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<fill color="%fileselector_linecolor%">
+				<placement x="%indent%" y="row24_y" w="%content_width%" h="input_line_width"/>
 			</fill>
 		</template>
 
