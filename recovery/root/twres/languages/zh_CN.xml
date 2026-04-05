@@ -9,6 +9,7 @@
 		<resource name="font_m" type="fontoverride" filename="DroidSansFallback.ttf" scale="100" />
 		<resource name="font_s" type="fontoverride" filename="DroidSansFallback.ttf" scale="100" />
 		<resource name="fixed" type="fontoverride" filename="DroidSansFallback.ttf" scale="100" />
+		<resource name="term" type="fontoverride" filename="DroidSansFallback.ttf" scale="100" />
 
 		<!-- Partition display names -->
 		<string name="system">System</string>

@@ -7,6 +7,7 @@
 		<resource filename="DroidSansFallback.ttf" name="font_m" scale="85" type="fontoverride"/>
 		<resource filename="DroidSansFallback.ttf" name="font_s" scale="90" type="fontoverride"/>
 		<resource filename="DroidSansFallback.ttf" name="fixed" scale="90" type="fontoverride"/>
+		<resource filename="DroidSansFallback.ttf" name="term" scale="90" type="fontoverride"/>
 		<!-- Partition display names -->
 		<string name="system">System</string>
 		<string name="system_image">Systemイメージ</string>
