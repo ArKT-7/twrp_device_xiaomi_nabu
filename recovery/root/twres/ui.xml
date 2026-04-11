@@ -232,6 +232,7 @@
 		<variable name="tw_clock_24_pos_x" value="0"/>
 		<variable name="tw_cpu_pos_x" value="0"/>
 		<variable name="tw_battery_pos_x" value="0"/>
+		<variable name="show_cluttered_Wbar" value="0"/>
 	</variables>
 
 	<mousecursor>
@@ -272,6 +273,7 @@
 				<condition var1="tw_busy" var2="0"/>
 				<placement x="936" y="88"/>
 				<actions>
+					<action function="set">show_cluttered_Wbar=1</action>
 					<action function="page">wintools</action>
 				</actions>
 			</button>
@@ -286,17 +288,70 @@
 				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
 			</fill>
 
+			<button>
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+				<fill color="%transparent%"/>
+				<condition var1="show_cluttered_Wbar" var2="0"/>
+				<action function="set">show_cluttered_Wbar=1</action>
+			</button>
+
+			<button>
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+				<fill color="%transparent%"/>
+				<condition var1="show_cluttered_Wbar" var2="1"/>
+				<action function="set">show_cluttered_Wbar=0</action>
+			</button>
+
 			<text color="%text_color%">
-				<condition var1="tw_no_cpu_temp" var2="1"/>
-				<condition var1="tw_cpu_pos_x" var2="0"/>
-				<font resource="font_m"/>
-				<placement x="%indent%" y="%row1_header_y%"/>
+				<conditions>
+					<condition var1="show_cluttered_Wbar" var2="0"/>
+					<condition var1="tw_no_cpu_temp" var2="1"/>
+					<condition var1="tw_cpu_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%indent%" y="7"/>
 				<text>%tw_version%</text>
 			</text>
 
 			<text color="%text_color%">
+				<conditions>
+					<condition var1="show_cluttered_Wbar" var2="0"/>
+					<condition var1="tw_no_cpu_temp" var2="0"/>
+					<condition var1="tw_cpu_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%indent%" y="9"/>
+				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C}</text>
+			</text>
+
+			<text color="%text_color%">
+				<conditions>
+					<condition var1="show_cluttered_Wbar" var2="0"/>
+					<condition var1="tw_clock_12_pos_x" var2="0"/>
+					<condition var1="tw_clock_24_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%center_x%" y="9" placement="5"/>
+				<text>%tw_time%</text>
+			</text>
+
+			<text color="%text_color%">
+				<conditions>
+					<condition var1="show_cluttered_Wbar" var2="0"/>
+					<condition var1="tw_no_battery_percent" var2="0"/>
+					<condition var1="tw_battery" op="&gt;" var2="0"/>
+					<condition var1="tw_battery" op="&lt;" var2="101"/>
+					<condition var1="tw_battery_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%indent_right%" y="9" placement="1"/>
+				<text>{@battery_pct=Battery: %tw_battery%}</text>
+			</text>
+
+			<text color="%text_color%">
+				<condition var1="show_cluttered_Wbar" var2="1"/>
 				<font resource="font_m"/>
-				<placement x="%indent%" y="%row1_header_y%"/>
+				<placement x="%indent%" y="7"/>
 				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C} | ESP: %arkt_esppart_display% | WIN: %arkt_winpart_display% | UD: %arkt_userdatapart_display% | %tw_time% | Battery: %tw_battery%</text>
 			</text>
 

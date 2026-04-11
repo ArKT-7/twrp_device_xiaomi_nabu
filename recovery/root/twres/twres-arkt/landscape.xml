@@ -3903,7 +3903,10 @@
 					</actions>
 				</listitem>
 				<listitem name="Windows Tools page">
-				<action function="page">wintools</action>
+					<actions>
+						<action function="set">show_cluttered_Wbar=1</action>
+						<action function="page">wintools</action>
+					</actions>
 				</listitem>
 				<listitem name="Rotate Screen to Portrait">
 				<action function="rotationbyarkt"/>
@@ -5772,6 +5775,42 @@ edi				<conditions>
 		</page>
 
 		<page name="slideout">
+			<fill color="%accent_color%">
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+			</fill>
+			
+			<fill color="#00000030">
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+			</fill>
+			
+			<text color="%text_color%">
+				<font resource="font_s"/>
+				<placement x="%indent%" y="3"/>
+				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C}    ESP: %arkt_esppart_display%    WIN: %arkt_winpart_display%    DATA: %arkt_userdatapart_display%    </text>
+			</text>
+
+			<text color="%text_color%">
+				<conditions>
+					<condition var1="tw_clock_12_pos_x" var2="0"/>
+					<condition var1="tw_clock_24_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%center_x%" y="3" placement="5"/>
+				<text>%tw_time%</text>
+			</text>
+
+			<text color="%text_color%">
+				<conditions>
+					<condition var1="tw_no_battery_percent" var2="0"/>
+					<condition var1="tw_battery" op="&gt;" var2="0"/>
+					<condition var1="tw_battery" op="&lt;" var2="101"/>
+					<condition var1="tw_battery_pos_x" var2="0"/>
+				</conditions>
+				<font resource="font_s"/>
+				<placement x="%indent_right%" y="3" placement="1"/>
+				<text>{@battery_pct=Battery: %tw_battery%}</text>
+			</text>
+
 			<fill color="%background_color%">
 				<placement x="0" y="%row2_header_y%" w="%screen_width%" h="%slideout_bg_height%"/>
 			</fill>
@@ -5794,6 +5833,16 @@ edi				<conditions>
 			<action>
 				<touch key="power+voldown"/>
 				<action function="screenshot"/>
+			</action>
+
+			<action>
+				<touch key="back"/>
+				<action function="overlay"/>
+			</action>
+
+			<action>
+				<touch key="home"/>
+				<action function="overlay"/>
 			</action>
 		</page>
 
@@ -6062,12 +6111,18 @@ edi				<conditions>
 
 			<action>
 				<touch key="back"/>
-				<action function="page">main</action>
+				<actions>
+					<action function="set">show_cluttered_Wbar=0</action>
+					<action function="page">main</action>
+				</actions>
 			</action>
 
 			<action>
 				<touch key="home"/>
-				<action function="page">main</action>
+				<actions>
+					<action function="set">show_cluttered_Wbar=0</action>
+					<action function="page">main</action>
+				</actions>
 			</action>
 		</page>
 
