@@ -4026,7 +4026,10 @@
 					</actions>
 				</listitem>
 				<listitem name="Linux Tools page">
-				<action function="page">lintools</action>
+					<actions>
+						<action function="set">show_cluttered_Wbar=1</action>
+						<action function="page">lintools</action>
+					</actions>
 				</listitem>
 				<listitem name="Rotate Screen to Landscape">
 				<action function="rotationbyarkt"/>
@@ -5724,6 +5727,20 @@
 		</page>
 
 		<page name="slideout">
+			<fill color="%accent_color%">
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+			</fill>
+			
+			<fill color="#00000030">
+				<placement x="0" y="0" w="%screen_width%" h="%status_height%"/>
+			</fill>
+			
+			<text color="%text_color%">
+				<font resource="font_m"/>
+				<placement x="%indent%" y="7"/>
+				<text>{@cpu_temp=CPU: %tw_cpu_temp% °C} | ESP: %arkt_esppart_display% | LIN: %arkt_linuxpart_display% | UD: %arkt_userdatapart_display% | %tw_time% | Battery: %tw_battery%</text>
+			</text>
+
 			<fill color="%background_color%">
 				<placement x="0" y="%row2_header_y%" w="%screen_width%" h="%slideout_bg_height%"/>
 			</fill>
@@ -5746,6 +5763,16 @@
 			<action>
 				<touch key="power+voldown"/>
 				<action function="screenshot"/>
+			</action>
+
+			<action>
+				<touch key="back"/>
+				<action function="overlay"/>
+			</action>
+
+			<action>
+				<touch key="home"/>
+				<action function="overlay"/>
 			</action>
 		</page>
 
@@ -5903,12 +5930,18 @@
 
 			<action>
 				<touch key="back"/>
-				<action function="page">main</action>
+				<actions>
+					<action function="set">show_cluttered_Wbar=0</action>
+					<action function="page">main</action>
+				</actions>
 			</action>
 
 			<action>
 				<touch key="home"/>
-				<action function="page">main</action>
+				<actions>
+					<action function="set">show_cluttered_Wbar=0</action>
+					<action function="page">main</action>
+				</actions>
 			</action>
 		</page>
 
