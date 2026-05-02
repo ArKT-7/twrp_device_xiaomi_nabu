@@ -11,4 +11,3 @@ ro.adb.secure=0
 fbe.metadata.wrappedkey=true
 ro.crypto.volume.filenames_mode=aes-256-cts
 vendor.usb.use_configfs=1
-vendor.usb.use_ffs_mtp=1
