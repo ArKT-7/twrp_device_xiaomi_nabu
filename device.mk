@@ -98,6 +98,7 @@ TARGET_RECOVERY_QCOM_RTC_FIX := true
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 TW_EXTRA_LANGUAGES := true
 TW_INCLUDE_NTFS_3G := true
+TW_HAS_MTP := true
 TW_USE_TOOLBOX := true
 TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_REPACKTOOLS := true
@@ -120,6 +121,8 @@ TW_VERBOSE_MOUNT_LOGGING := true
 TW_USE_USB_STORAGE := true
 TW_INCLUDE_TWRP_CMD := true
 TW_INCLUDE_TWRP_CLI := true
+TW_INCLUDE_NANO := true
+TW_HAS_EDL_MODE := true
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
@@ -132,8 +135,6 @@ PLATFORM_SECURITY_PATCH := 2099-12-31
 VENDOR_SECURITY_PATCH := 2099-12-31
 PLATFORM_VERSION := 16.1.0
 PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
-TW_OVERRIDE_SYSTEM_PROPS := \
-    "ro.build.fingerprint=ro.system.build.fingerprint;ro.build.version.incremental"
 # ==================================================
 # == Recovery Device Modules and Libraries ==
 # ==================================================
