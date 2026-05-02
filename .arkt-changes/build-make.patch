@@ -1,7 +1,21 @@
 diff -ruN '--exclude=.git' /build/make/core/Makefile /build/make/core/Makefile
 --- /build/make/core/Makefile	2025-12-23 23:01:29.625113039 +0530
-+++ /build/make/core/Makefile	2026-03-22 03:14:57.495800518 +0530
-@@ -2265,7 +2265,7 @@
++++ /build/make/core/Makefile	2026-05-02 22:17:19.748553397 +0530
+@@ -970,9 +970,12 @@
+   $(MKBOOTIMG) --kernel $(call bootimage-to-kernel,$(1)) $(INTERNAL_BOOTIMAGE_ARGS) $(INTERNAL_MKBOOTIMG_VERSION_ARGS) \
+                $(INTERNAL_MKBOOTIMG_GKI_SINGING_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $(1)
+   $(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(call get-bootimage-partition-size,$(1),boot)))
++  ACTUAL_SIZE=$$(stat -c%s $(1)); \
++  DYNAMIC_PART_SIZE=$$((ACTUAL_SIZE + 69632)); \
++  DYNAMIC_PART_SIZE=$$(( (DYNAMIC_PART_SIZE + 4095) / 4096 * 4096 )); \
+   $(AVBTOOL) add_hash_footer \
+           --image $(1) \
+-          --partition_size $(call get-bootimage-partition-size,$(1),boot) \
++          --partition_size $$DYNAMIC_PART_SIZE \
+           --partition_name boot $(INTERNAL_AVB_BOOT_SIGNING_ARGS) \
+           $(BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS)
+ endef
+@@ -2265,7 +2268,7 @@
  	  cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.wipe)
  	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
  	cd $(TARGET_RECOVERY_ROOT_OUT) && touch ramdisk-files.txt && touch ramdisk-files.sha256sum && find . | sed "s/.\///" | sed "/lib\/modules\//d" > ramdisk-files.txt
@@ -10,3 +24,20 @@ diff -ruN '--exclude=.git' /build/make/core/Makefile /build/make/core/Makefile
  	$(BOARD_RECOVERY_IMAGE_PREPARE)
  	$(hide) touch $@
  
+@@ -2302,8 +2305,14 @@
+     $(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(BOARD_RECOVERYIMAGE_PARTITION_SIZE))))
+   $(if $(filter true,$(BOARD_AVB_ENABLE)), \
+     $(if $(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)), \
+-      $(AVBTOOL) add_hash_footer --image $(1) --partition_size $(call get-bootimage-partition-size,$(1),boot) --partition_name boot $(INTERNAL_AVB_BOOT_SIGNING_ARGS) $(BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS),\
+-      $(AVBTOOL) add_hash_footer --image $(1) --partition_size $(BOARD_RECOVERYIMAGE_PARTITION_SIZE) --partition_name recovery $(INTERNAL_AVB_RECOVERY_SIGNING_ARGS) $(BOARD_AVB_RECOVERY_ADD_HASH_FOOTER_ARGS)))
++      ACTUAL_SIZE=$$(stat -c%s $(1)); \
++      DYNAMIC_PART_SIZE=$$((ACTUAL_SIZE + 69632)); \
++      DYNAMIC_PART_SIZE=$$(( (DYNAMIC_PART_SIZE + 4095) / 4096 * 4096 )); \
++      $(AVBTOOL) add_hash_footer --image $(1) --partition_size $$DYNAMIC_PART_SIZE --partition_name boot $(INTERNAL_AVB_BOOT_SIGNING_ARGS) $(BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS),\
++      ACTUAL_SIZE=$$(stat -c%s $(1)); \
++      DYNAMIC_PART_SIZE=$$((ACTUAL_SIZE + 69632)); \
++      DYNAMIC_PART_SIZE=$$(( (DYNAMIC_PART_SIZE + 4095) / 4096 * 4096 )); \
++      $(AVBTOOL) add_hash_footer --image $(1) --partition_size $$DYNAMIC_PART_SIZE --partition_name recovery $(INTERNAL_AVB_RECOVERY_SIGNING_ARGS) $(BOARD_AVB_RECOVERY_ADD_HASH_FOOTER_ARGS)))
+ endef
+ 
+ recoveryimage-deps := $(MKBOOTIMG) $(recovery_ramdisk) $(recovery_kernel)
