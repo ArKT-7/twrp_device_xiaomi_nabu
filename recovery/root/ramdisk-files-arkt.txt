@@ -318,6 +318,9 @@ twres/languages/sl.xml
 twres/languages/id.xml
 twres/languages/ru.xml
 twres/languages/uk.xml
+twres/languages/ja.xml
+twres/languages/zh_CN.xml
+twres/languages/zh_TW.xml
 twres/languages/pl.xml
 twres/languages/de.xml
 twres/languages/sk.xml
@@ -332,6 +335,9 @@ twres/splash.xml
 twres/fonts
 twres/fonts/DroidSansMono.ttf
 twres/fonts/RobotoCondensed-Regular.ttf
+twres/fonts/DroidSansFallback.ttf
+twres/fonts/NotoSansCJKjp-Regular.ttf
+twres/fonts/OFL.txt
 twres/landscape.xml
 twres/ui.xml
 sbin
