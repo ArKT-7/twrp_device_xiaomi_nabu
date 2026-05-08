@@ -1,6 +1,6 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
 --- /bootable/recovery/data.cpp	2025-12-23 23:01:31.666380679 +0530
-+++ /bootable/recovery/data.cpp	2026-03-22 03:14:57.464800771 +0530
++++ /bootable/recovery/data.cpp	2026-05-09 04:02:24.808630581 +0530
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -12,7 +12,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  #ifdef BOARD_BOOT_HEADER_VERSION
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2025-12-23 23:01:31.673835823 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-03-22 03:14:57.466800754 +0530
++++ /bootable/recovery/gui/action.cpp	2026-05-09 04:32:25.532318597 +0530
 @@ -210,6 +210,8 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -22,7 +22,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -1074,6 +1076,278 @@
+@@ -1074,6 +1076,265 @@
  	int i, ret_val = 0, wipe_cache = 0;
  	// We're going to jump to this page first, like a loading page
  	gui_changePage(arg);
@@ -89,24 +89,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			return 1;
 +		}
 +
-+		gui_print("Extracting payload.bin...");
-+		std::string extract_cmd = "unzip -o \"" + zip_path + "\" payload.bin -d /sdcard/arkt-magic/";
-+		if (TWFunc::Exec_Cmd(extract_cmd, true) != 0) {
-+			LOGERR("Error!! Failed to extract payload.bin from ZIP");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+
-+		gui_print("Verifying payload.bin...");
++		gui_print("Verifying OTA ZIP contents...");
 +		gui_print(" ");
-+		std::string analyze_cmd = "/system/bin/otaripper -l /sdcard/arkt-magic/payload.bin";
++		std::string analyze_cmd = "/system/bin/otaripper -l \"" + zip_path + "\"";
 +		std::string payload_out;
 +		if (TWFunc::Exec_Cmd(analyze_cmd, payload_out, true) != 0 || payload_out.empty()) {
-+			LOGERR("Error!! Failed to analyze payload.bin");
++			LOGERR("Error!! Failed to analyze the OTA ZIP");
 +			zip_queue_index = 0;
 +			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
@@ -133,7 +121,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		}
 +
 +		if (!missing.empty()) {
-+			LOGERR("Error!! payload.bin is missing the following required images:");
++			LOGERR("Error!! OTA ZIP is missing the following required images:");
 +			for (const auto& part : missing) {
 +				gui_print("  - %s\n", part.c_str());
 +			}
@@ -144,13 +132,13 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			operation_end(1);
 +			return 1;
 +		}
-+		gui_print("payload.bin contains all required images");
++		gui_print("OTA ZIP contains all required images");
 +
-+		gui_print("\nExtracting images from payload.bin...");
-+		std::string dump_cmd = "/system/bin/otaripper -n -o /sdcard/arkt-magic/ /sdcard/arkt-magic/payload.bin";
++		gui_print("\nExtracting images directly from ZIP...");
++		std::string dump_cmd = "/system/bin/otaripper -n -o /sdcard/arkt-magic/ \"" + zip_path + "\"";
 +		std::string dump_out;
 +		if (TWFunc::Exec_Cmd(dump_cmd, true) != 0) {
-+			LOGERR("Error!! Failed to extract payload.bin images");
++			LOGERR("Error!! Failed to extract images from OTA ZIP");
 +			zip_queue_index = 0;
 +			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
 +			DataManager::SetValue("arkt_magic_auto_installer", 0);
@@ -160,7 +148,6 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +		}
 +		TWFunc::Exec_Cmd("mv /sdcard/arkt-magic/extracted_*/* /sdcard/arkt-magic/");
 +		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/extracted_*");
-+		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/payload.bin");
 +
 +		gui_print("Building super.img...");
 +		std::string lpmake_cmd = "lpmake "
@@ -301,7 +288,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	for (i=0; i<zip_queue_index; i++) {
  		string zip_path = zip_queue[i];
  		size_t slashpos = zip_path.find_last_of('/');
-@@ -2373,3 +2647,80 @@
+@@ -2373,3 +2634,80 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -385,7 +372,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2025-12-23 23:01:31.674480566 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-03-22 03:14:57.469800730 +0530
++++ /bootable/recovery/gui/objects.hpp	2026-05-09 04:02:24.811341731 +0530
 @@ -335,6 +335,8 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -397,7 +384,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  	int fileexists(std::string arg);
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-12-23 23:01:31.707604645 +0530
-+++ /bootable/recovery/openrecoveryscript.cpp	2026-03-22 03:14:57.470800722 +0530
++++ /bootable/recovery/openrecoveryscript.cpp	2026-05-09 04:02:24.812134184 +0530
 @@ -62,27 +62,34 @@
  #define SCRIPT_COMMAND_SIZE 512
  
@@ -456,7 +443,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  int OpenRecoveryScript::copy_script_file(string filename) {
 diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/recovery/prebuilt/Android.mk
 --- /bootable/recovery/prebuilt/Android.mk	2025-12-23 23:01:31.708567270 +0530
-+++ /bootable/recovery/prebuilt/Android.mk	2026-03-22 04:30:25.089392538 +0530
++++ /bootable/recovery/prebuilt/Android.mk	2026-05-09 04:02:24.812717114 +0530
 @@ -221,11 +221,11 @@
          RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/keystore2
          RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/keystore_cli
@@ -489,7 +476,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/reco
      RECOVERY_BINARY_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/bin/update_engine_sideload
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
 --- /bootable/recovery/twrp.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp.cpp	2026-03-22 03:14:57.472139662 +0530
++++ /bootable/recovery/twrp.cpp	2026-05-09 04:02:24.813112183 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -526,7 +513,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-03-22 05:00:30.726840660 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-05-09 04:02:24.813905029 +0530
 @@ -1659,4 +1659,91 @@
  	return ret;
  }
@@ -621,7 +608,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2026-03-22 03:14:57.473414663 +0530
++++ /bootable/recovery/twrp-functions.hpp	2026-05-09 04:02:24.814590444 +0530
 @@ -75,6 +75,7 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
@@ -632,7 +619,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
 diff -ruN '--exclude=.git' /bootable/recovery/twrpRepacker.cpp /bootable/recovery/twrpRepacker.cpp
 --- /bootable/recovery/twrpRepacker.cpp	2025-12-23 23:01:31.724043892 +0530
-+++ /bootable/recovery/twrpRepacker.cpp	2026-03-22 03:14:57.473818052 +0530
++++ /bootable/recovery/twrpRepacker.cpp	2026-05-09 04:02:24.815126587 +0530
 @@ -364,8 +364,21 @@
  		gui_msg(Msg(msg::kError, "create_ramdisk_error=failed to create ramdisk to flash."));
  		return false;
@@ -662,7 +649,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrpRepacker.cpp /bootable/recover
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/variables.h /bootable/recovery/variables.h
 --- /bootable/recovery/variables.h	2025-12-23 23:01:31.726687626 +0530
-+++ /bootable/recovery/variables.h	2026-03-22 03:14:57.474431383 +0530
++++ /bootable/recovery/variables.h	2026-05-09 04:02:24.815877549 +0530
 @@ -17,7 +17,7 @@
  #ifndef _VARIABLES_HEADER_
  #define _VARIABLES_HEADER_
