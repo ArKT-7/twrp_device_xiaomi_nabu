@@ -106,6 +106,7 @@ TW_INPUT_BLACKLIST := "hbtp_vm"
 TW_BRIGHTNESS_PATH := "/sys/class/backlight/panel0-backlight/brightness"
 TW_MAX_BRIGHTNESS := 2047
 TW_DEFAULT_BRIGHTNESS := 869
+TW_FRAMERATE := 120
 TW_INCLUDE_LIBRESETPROP := true
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_NO_SCREEN_BLANK := true
@@ -118,11 +119,11 @@ TARGET_USES_LOGD := true
 TARGET_USES_MKE2FS := true
 TW_NO_HAPTICS := true
 TW_VERBOSE_MOUNT_LOGGING := true
-TW_USE_USB_STORAGE := true
 TW_INCLUDE_TWRP_CMD := true
 TW_INCLUDE_TWRP_CLI := true
 TW_INCLUDE_NANO := true
 TW_HAS_EDL_MODE := true
+TW_USE_NEW_MINADBD := true
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
@@ -130,10 +131,13 @@ TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
 TW_INCLUDE_CRYPTO_FBE_METADATA_ENCRYPTION := true
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
-BOARD_USES_QCOM_FBE_DECRYPTION := true
+# ==================================================
+# == Versions ==
+# ==================================================
 PLATFORM_SECURITY_PATCH := 2099-12-31
-VENDOR_SECURITY_PATCH := 2099-12-31
-PLATFORM_VERSION := 16.1.0
+VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
+BOOT_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
+PLATFORM_VERSION := 99.87.36
 PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
 # ==================================================
 # == Recovery Device Modules and Libraries ==

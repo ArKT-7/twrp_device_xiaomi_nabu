@@ -1,6 +1,15 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-12-23 23:01:31.666380679 +0530
-+++ /bootable/recovery/data.cpp	2026-03-28 11:55:23.704709666 +0530
+--- /bootable/recovery/data.cpp	2026-07-23 12:30:59.326065606 +0530
++++ /bootable/recovery/data.cpp	2026-09-20 06:35:08.565636639 +0530
+@@ -764,7 +764,7 @@
+ 	mPersist.SetValue(TW_SDPART_FILE_SYSTEM, "ext3");
+ 	mPersist.SetValue(TW_TIME_ZONE_GUISEL, "CST6;CDT,M3.2.0,M11.1.0");
+ 	mPersist.SetValue(TW_TIME_ZONE_GUIOFFSET, "0");
+-	mPersist.SetValue(TW_TIME_ZONE_GUIDST, "1");
++	mPersist.SetValue(TW_TIME_ZONE_GUIDST, "0");
+ 	mPersist.SetValue(TW_AUTO_REFLASHTWRP_VAR, "0");
+ #ifdef TW_NO_FLASH_CURRENT_TWRP
+ 	mConst.SetValue("tw_no_flash_current_twrp", "1");
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -10,9 +19,18 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  	mPersist.SetValue("tw_no_screen_timeout", "0");
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
+@@ -1143,7 +1143,7 @@
+ 
+ string DataManager::GetSettingsStoragePath(void)
+ {
+-	return GetStrValue("tw_settings_path");
++	return "/metadata/TWRP/";
+ }
+ 
+ void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-12-23 23:01:31.673835823 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-03-28 11:55:23.706067095 +0530
+--- /bootable/recovery/gui/action.cpp	2026-07-23 12:30:59.336490674 +0530
++++ /bootable/recovery/gui/action.cpp	2026-09-20 06:39:21.356813188 +0530
 @@ -210,6 +210,15 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -29,7 +47,15 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -594,6 +603,7 @@
+@@ -557,6 +566,7 @@
+ 
+ int GUIAction::reboot(std::string arg)
+ {
++	DataManager::Flush();
+ 	sync();
+ 	DataManager::SetValue("tw_gui_done", 1);
+ 	DataManager::SetValue("tw_reboot_arg", arg);
+@@ -594,6 +604,7 @@
  	// to prevent crashing which could occur when we start deleting
  	// GUI resources in the action thread while we attempt to render
  	// with those same resources in another thread.
@@ -37,15 +63,36 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	return 0;
  }
  
-@@ -676,6 +686,7 @@
+@@ -672,10 +683,14 @@
+ 		gui_msg("simulating=Simulating actions...");
+ 	else {
+ 		DataManager::ResetDefaults();
++		DataManager::Flush();
++		sync();
+ 		PartitionManager.Update_System_Details();
  		PartitionManager.Mount_Current_Storage(true);
++		PageManager::RequestReload();
  	}
  	operation_end(0);
 +	TWFunc::PartitionSizesByArKT();
  	return 0;
  }
  
-@@ -2373,3 +2384,333 @@
+@@ -1933,8 +1948,12 @@
+ 	int op_status = 0;
+ 
+ 	operation_start("Set Language");
+-	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
++	string lang = DataManager::GetStrValue("tw_language");
++	DataManager::SetValue("tw_language", lang, 1); 
++	PageManager::LoadLanguage(lang);
+ 	PageManager::RequestReload();
++	DataManager::Flush();
++	sync();
+ 	op_status = 0; // success
+ 
+ 	operation_end(op_status);
+@@ -2373,3 +2392,336 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -137,6 +184,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +// Reboot device with different options based on arg
 +int GUIAction::rebootbyarkt(std::string arg)
 +{
++	DataManager::Flush();
++	sync();
++
 +    if (arg == "r") {
 +        TWFunc::Exec_Cmd("reboot >/dev/null 2>&1 || true");
 +    } else if (arg == "rtbl") {
