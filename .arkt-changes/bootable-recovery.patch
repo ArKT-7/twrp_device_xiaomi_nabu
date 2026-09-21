@@ -431,8 +431,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +}
 \ No newline at end of file
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-12-23 23:01:31.674480566 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-03-28 11:55:23.707708939 +0530
+--- /bootable/recovery/gui/objects.hpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/objects.hpp	2026-09-21 06:05:24.295073703 +0530
 @@ -335,6 +335,15 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
@@ -449,6 +449,129 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/recovery/minuitwrp/events.cpp
+--- /bootable/recovery/minuitwrp/events.cpp	2026-07-23 12:30:59.374978875 +0530
++++ /bootable/recovery/minuitwrp/events.cpp	2026-09-21 13:29:57.878208664 +0530
+@@ -27,6 +27,8 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <fstream>
++#include <cutils/properties.h>
++extern unsigned int gr_rotation; 
+ #ifdef USE_QTI_AIDL_HAPTICS_FIX_OFF
+ #include <thread>
+ #endif
+@@ -448,13 +450,21 @@
+     printf("EV: p->x=%d  x-range=%d,%d  fb-width=%d\n", p->x, p->xi.minimum, p->xi.maximum, gr_fb_width());
+ #endif
+ 
++    int fb_width, fb_height;
++    if (gr_rotation == 90 || gr_rotation == 270) {
++        fb_width = gr_fb_height();
++        fb_height = gr_fb_width();
++    }
+ #ifndef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    int fb_width = gr_fb_width();
+-    int fb_height = gr_fb_height();
++    else {
++        fb_width = gr_fb_width();
++        fb_height = gr_fb_height();
++    }
+ #else
+-    // We need to swap the scaling sizes, too
+-    int fb_width = gr_fb_height();
+-    int fb_height = gr_fb_width();
++    else {
++        fb_width = gr_fb_height();
++        fb_height = gr_fb_width();
++    }
+ #endif
+ 
+     *x = (p->x - p->xi.minimum) * (fb_width - 1) / (p->xi.maximum - p->xi.minimum);
+@@ -734,11 +744,29 @@
+         return 1;
+     }
+ 
++    int temp_x = x; 
++    switch (gr_rotation) {
++        case 90:
++            x = y;
++            y = gr_fb_height() - temp_x;
++            break;
++        case 180:
++            x = gr_fb_width() - x;
++            y = gr_fb_height() - y;
++            break;
++        case 270:
++            x = gr_fb_width() - y;
++            y = temp_x;
++            break;
++        case 0:
++        default:
+ #ifdef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    x ^= y;
+-    y ^= x;
+-    x ^= y;
++            x ^= y;
++            y ^= x;
++            x ^= y;
+ #endif
++            break;
++    }
+ #ifdef RECOVERY_TOUCHSCREEN_FLIP_X
+     x = gr_fb_width() - x;
+ #endif
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
+--- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-09-21 13:47:41.809594422 +0530
+@@ -357,18 +357,32 @@
+     ms->format = gr_draw->format;
+ }
+ 
+-int gr_init(void)
++// Function By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
++void gr_reload_rotation(void)
+ {
+-    gr_draw = NULL;
+-
+     char gr_rotation_string[PROPERTY_VALUE_MAX];
+     char default_rotation[4];
+     snprintf(default_rotation, 4, "%d", TW_ROTATION);
+-    property_get("persist.twrp.rotation", gr_rotation_string, default_rotation);
++
++    FILE *rf = fopen("/twres/twres-arkt/rotation_state", "r");
++    if (rf) {
++        if (!fgets(gr_rotation_string, sizeof(gr_rotation_string), rf))
++            strcpy(gr_rotation_string, default_rotation);
++        fclose(rf);
++    } else {
++        property_get("persist.twrp.rotation", gr_rotation_string, default_rotation);
++    }
+     gr_rotation = atoi(gr_rotation_string);
+     if (!(gr_rotation == 90 || gr_rotation == 180 || gr_rotation == 270))
+         gr_rotation = 0;
+ 
++    property_set("persist.twrp.rotation", gr_rotation_string);
++}
++
++int gr_init(void)
++{
++    gr_draw = NULL;
++    gr_reload_rotation();
+ #ifdef MSM_BSP
+     gr_backend = open_overlay();
+     if (gr_backend) {
+@@ -428,6 +442,10 @@
+ void gr_exit(void)
+ {
+     gr_backend->exit(gr_backend);
++    if (gr_context) {
++        gglUninit(gr_context);
++        gr_context = NULL;
++    }
+ }
+ 
+ int gr_fb_width(void)
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-12-23 23:01:31.707604645 +0530
 +++ /bootable/recovery/openrecoveryscript.cpp	2026-03-28 11:55:23.708462443 +0530
@@ -579,13 +702,22 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	// Launch the main GUI
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-03-28 11:55:23.710019766 +0530
-@@ -1659,4 +1659,313 @@
+--- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-09-21 13:46:54.839780359 +0530
+@@ -59,6 +59,8 @@
+ #include <sys/reboot.h>
+ #include "gui/rapidxml.hpp"
+ #include "gui/pages.hpp"
++#include "minuitwrp/minui.h"
++extern void gr_reload_rotation(void);
+ #endif // ndef BUILD_TWRPTAR_MAIN
+ #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
+ 	#include "openaes/inc/oaes_lib.h"
+@@ -1659,4 +1661,305 @@
  	return ret;
  }
  
-+// Functions By ArKT , telegram - @ArKT_7, Github - https://github.com/ArKT-7
++// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
 +
 +void TWFunc::PartitionSizesByArKT() 
 +{
@@ -676,6 +808,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +{
 +    LOGINFO("TWRP ROTATION BY ARKT...\n");
 +
++    char cur[PROPERTY_VALUE_MAX];
++    property_get("persist.twrp.rotation", cur, "0");
++    int next_rot = (atoi(cur) + 90) % 360;
++
++    char next_rot_str[4];
++    snprintf(next_rot_str, sizeof(next_rot_str), "%d", next_rot);
++
++    property_set("persist.twrp.rotation", next_rot_str);
++    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", next_rot_str);
++
 +    // Prepare environment
 +    chdir("/");
 +    umask(022);
@@ -725,11 +867,6 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    Exec_Cmd("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
 +    Exec_Cmd("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
 +
-+    // Swap libraries for rotation
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp.so ] && mv /system/lib64/libminuitwrp.so /system/lib64/libminuitwrp-arkt-1.so");
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt.so ] && mv /system/lib64/libminuitwrp-arkt.so /system/lib64/libminuitwrp.so");
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt-1.so ] && mv /system/lib64/libminuitwrp-arkt-1.so /system/lib64/libminuitwrp-arkt.so");
-+
 +    // Swap ramdisk files for rotation
 +    Exec_Cmd("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
 +    Exec_Cmd("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
@@ -739,22 +876,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    sync();
 +    DataManager::Flush();
 +
-+    // Unmount partitions forcefully
-+    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
-+	Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/linux >/dev/null 2>&1 || true");
-+    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
-+
-+    Exec_Cmd("sync");
-+
-+    // Fork a child process to kill twrp with SIGUSR1 to rotate UI
-+    pid_t pid = fork();
-+    if (pid == 0) {
-+        ::sleep(1);
-+        LOGINFO("KILLING TWRP FOR ROTATION...\n");
-+        execlp("killall", "killall", "-SIGUSR1", "recovery", (char*)nullptr);
-+        _exit(0); // child exit
-+    }
-+
++    gr_reload_rotation();
++    PageManager::RequestReload();
++    sync();
 +    LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
 +}
 +
