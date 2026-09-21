@@ -523,8 +523,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/rec
  #endif
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
 --- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
-+++ /bootable/recovery/minuitwrp/graphics.cpp	2026-09-21 13:47:41.809594422 +0530
-@@ -357,18 +357,32 @@
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-09-21 20:27:30.773939218 +0530
+@@ -357,18 +357,36 @@
      ms->format = gr_draw->format;
  }
  
@@ -539,7 +539,11 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
      snprintf(default_rotation, 4, "%d", TW_ROTATION);
 -    property_get("persist.twrp.rotation", gr_rotation_string, default_rotation);
 +
-+    FILE *rf = fopen("/twres/twres-arkt/rotation_state", "r");
++    FILE *rf = fopen("/metadata/TWRP/rotation_state", "r");
++    if (!rf) {
++        rf = fopen("/twres/twres-arkt/rotation_state", "r");
++    }
++    
 +    if (rf) {
 +        if (!fgets(gr_rotation_string, sizeof(gr_rotation_string), rf))
 +            strcpy(gr_rotation_string, default_rotation);
@@ -561,7 +565,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  #ifdef MSM_BSP
      gr_backend = open_overlay();
      if (gr_backend) {
-@@ -428,6 +442,10 @@
+@@ -428,6 +446,10 @@
  void gr_exit(void)
  {
      gr_backend->exit(gr_backend);
@@ -665,8 +669,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/reco
  ifeq ($(AB_OTA_UPDATER), true)
      RECOVERY_BINARY_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/bin/update_engine_sideload
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp.cpp	2026-03-28 11:55:23.709471822 +0530
+--- /bootable/recovery/twrp.cpp	2026-07-23 12:30:59.414842317 +0530
++++ /bootable/recovery/twrp.cpp	2026-09-21 22:21:53.740134358 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -683,7 +687,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	Decrypt_Page(skip_decryption, datamedia);
  
  	// Check for and load custom theme if present
-@@ -475,6 +484,8 @@
+@@ -398,6 +407,8 @@
+ 		return -1;
+ 	}
+ 
++	TWFunc::PersistRotationByArKT();
++
+ #ifdef TW_LOAD_VENDOR_MODULES
+ 	if (startup.Get_Fastboot_Mode()) {
+ 		TWPartition* ven_dlkm = PartitionManager.Find_Partition_By_Path("/vendor_dlkm");
+@@ -475,6 +486,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
  
@@ -692,7 +705,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	twrpAdbBuFifo *adb_bu_fifo = new twrpAdbBuFifo();
  	TWFunc::Clear_Bootloader_Message();
  
-@@ -491,7 +502,7 @@
+@@ -491,7 +504,7 @@
  	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
  	GUIConsole::Translate_Now();
  
@@ -703,7 +716,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-09-21 13:46:54.839780359 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-09-21 23:09:44.630810283 +0530
 @@ -59,6 +59,8 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
@@ -713,7 +726,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1661,305 @@
+@@ -1659,4 +1661,303 @@
  	return ret;
  }
  
@@ -804,82 +817,80 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +}
 +
 +
-+void TWFunc::RotationByArkt() 
++void TWFunc::SwapXmlByArKT()
 +{
-+    LOGINFO("TWRP ROTATION BY ARKT...\n");
++    const std::string swap_script = R"SCRIPT(
++        mkdir -p /twres/twres-arkt/backup
 +
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/$f" ] && mv -f "/twres/$f" "/twres/twres-arkt/backup/"
++        done
++        
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/twres-arkt/$f" ] && mv -f "/twres/twres-arkt/$f" "/twres/"
++        done
++        
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/twres-arkt/backup/$f" ] && mv -f "/twres/twres-arkt/backup/$f" "/twres/twres-arkt/"
++        done
++
++        SHARED_IMGS="splashteamwin.png enter_terminal.png shift_terminal.png win.png main_button_half_width_low.png shift_terminal_fill.png splashlogo.png backspace_terminal.png main_button_half_width.png space_terminal.png unlock_icon.png cursor.png"
++        for img in $SHARED_IMGS; do
++            [ -f "/twres/twres-arkt/images/$img" ] && mv -f "/twres/twres-arkt/images/$img" "/twres/images/"
++        done
++
++        [ -f /ramdisk-files.txt ] && mv -f /ramdisk-files.txt /ramdisk-files-arkt-1.txt
++        [ -f /ramdisk-files-arkt.txt ] && mv -f /ramdisk-files-arkt.txt /ramdisk-files.txt
++        [ -f /ramdisk-files-arkt-1.txt ] && mv -f /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt
++        
++        rm -rf /twres/twres-arkt/backup
++    )SCRIPT";
++
++    Exec_Cmd(swap_script);
++}
++
++void TWFunc::PersistRotationByArKT()
++{
++    PartitionManager.Mount_By_Path("/metadata", false);
++
++    std::string rot_str = "0", ram_str = "0";
++    TWFunc::read_file("/metadata/TWRP/rotation_state", rot_str);
++    TWFunc::read_file("/twres/twres-arkt/rotation_state", ram_str);
++
++    int saved = atoi(rot_str.c_str());
++    if (saved != 90 && saved != 180 && saved != 270) saved = 0;
++
++    property_set("persist.twrp.rotation", std::to_string(saved).c_str());
++    Exec_Cmd("mkdir -p /twres/twres-arkt");
++    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", std::to_string(saved));
++
++    if ((saved == 90 || saved == 270) != (atoi(ram_str.c_str()) == 90 || atoi(ram_str.c_str()) == 270)) {
++        SwapXmlByArKT();
++    }
++    
++    sync();
++}
++
++void TWFunc::RotationByArkt()
++{
 +    char cur[PROPERTY_VALUE_MAX];
 +    property_get("persist.twrp.rotation", cur, "0");
-+    int next_rot = (atoi(cur) + 90) % 360;
++    std::string next_rot = std::to_string((atoi(cur) + 90) % 360);
 +
-+    char next_rot_str[4];
-+    snprintf(next_rot_str, sizeof(next_rot_str), "%d", next_rot);
++    property_set("persist.twrp.rotation", next_rot.c_str());
++    Exec_Cmd("mkdir -p /metadata/TWRP /twres/twres-arkt");
++    TWFunc::write_to_file("/metadata/TWRP/rotation_state", next_rot);
++    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", next_rot);
 +
-+    property_set("persist.twrp.rotation", next_rot_str);
-+    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", next_rot_str);
-+
-+    // Prepare environment
 +    chdir("/");
 +    umask(022);
++    SwapXmlByArKT();
 +
-+    LOGINFO("Backing up current twres...\n");
-+
-+    // Backup current twres layout files
-+    Exec_Cmd("mkdir -p /twres/twres-arkt/backup");
-+    Exec_Cmd("mv /twres/ui.xml /twres/twres-arkt/backup/ui.xml");
-+    Exec_Cmd("mv /twres/splash.xml /twres/twres-arkt/backup/splash.xml");
-+    Exec_Cmd("mv /twres/images /twres/twres-arkt/backup/images");
-+
-+    Exec_Cmd("[ -f /twres/portrait.xml ] && mv /twres/portrait.xml /twres/twres-arkt/backup/portrait.xml");
-+    Exec_Cmd("[ -f /twres/landscape.xml ] && mv /twres/landscape.xml /twres/twres-arkt/backup/landscape.xml");
-+
-+    LOGINFO("Swapping in new layout...\n");
-+
-+    // Replace with new layout files
-+    Exec_Cmd("mv /twres/twres-arkt/ui.xml /twres/");
-+    Exec_Cmd("mv /twres/twres-arkt/splash.xml /twres/");
-+    Exec_Cmd("mv /twres/twres-arkt/images /twres/");
-+
-+    Exec_Cmd("[ -f /twres/twres-arkt/portrait.xml ] && mv /twres/twres-arkt/portrait.xml /twres/");
-+    Exec_Cmd("[ -f /twres/twres-arkt/landscape.xml ] && mv /twres/twres-arkt/landscape.xml /twres/");
-+
-+    LOGINFO("Moving previous layout into /twres-arkt...\n");
-+
-+    // Restore backup files to twres-arkt folder for future swaps
-+    Exec_Cmd("mv /twres/twres-arkt/backup/ui.xml /twres/twres-arkt/ui.xml");
-+    Exec_Cmd("mv /twres/twres-arkt/backup/splash.xml /twres/twres-arkt/splash.xml");
-+    Exec_Cmd("mv /twres/twres-arkt/backup/images /twres/twres-arkt/images");
-+
-+    // Move specific images back to images folder
-+    Exec_Cmd("mv /twres/twres-arkt/images/splashteamwin.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/enter_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/win.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width_low.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal_fill.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/splashlogo.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/backspace_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/space_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/unlock_icon.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/cursor.png /twres/images/");
-+
-+    Exec_Cmd("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
-+    Exec_Cmd("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
-+
-+    // Swap ramdisk files for rotation
-+    Exec_Cmd("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
-+    Exec_Cmd("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
-+    Exec_Cmd("[ -f /ramdisk-files-arkt-1.txt ] && mv /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt");
-+
-+    LOGINFO("Unmounting and reinitializing...\n");
-+    sync();
 +    DataManager::Flush();
++    sync();
 +
 +    gr_reload_rotation();
 +    PageManager::RequestReload();
-+    sync();
-+    LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
 +}
 +
 +
@@ -1020,15 +1031,17 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2026-03-28 11:55:23.711362422 +0530
-@@ -75,6 +75,11 @@
+--- /bootable/recovery/twrp-functions.hpp	2026-07-23 12:30:59.414842317 +0530
++++ /bootable/recovery/twrp-functions.hpp	2026-09-21 22:17:14.055932795 +0530
+@@ -75,6 +75,13 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
  	static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
 +	static void PartitionSizesByArKT(); 
 +	static void CommonByArKT();
 +	static void RotationByArkt();
++	static void SwapXmlByArKT();
++	static void PersistRotationByArKT();
 +	static void partedprintByArKT();
 +	static void FormatByArKT();
  

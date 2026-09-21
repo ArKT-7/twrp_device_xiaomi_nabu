@@ -3085,7 +3085,7 @@
 
 			<text style="text_m">
 				<condition var1="tw_has_boot_slots" var2="1"/>
-				<placement x="%col1_x_header%" y="%row14_y%"/>
+				<placement x="%col1_x_header%" y="%row4_header_y%"/>
 				<text>{@current_boot_slot=Current Slot: %tw_active_slot%}</text>
 			</text>
 
