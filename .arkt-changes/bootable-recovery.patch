@@ -30,7 +30,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2026-07-23 12:30:59.336490674 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-09-22 22:56:16.593071497 +0530
++++ /bootable/recovery/gui/action.cpp	2026-10-04 01:08:54.680022324 +0530
 @@ -210,6 +210,15 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -92,7 +92,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	op_status = 0; // success
  
  	operation_end(op_status);
-@@ -2373,3 +2392,191 @@
+@@ -2373,3 +2392,202 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -117,6 +117,17 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +
 +int GUIAction::formatbyarkt(std::string arg __unused)
 +{
++	if (access("/config/usb_gadget/g1/configs/b.1/mass_storage.0", F_OK) == 0) {
++        gui_print("\nMass storage mode is enabled!");
++        gui_changeOverlay("msc_enabled_warn");
++        return 1;
++    }
++
++	if (arg != "pass") {
++        gui_changeOverlay("winformat_warn");
++        return 0;
++    }
++
 +    gui_changeOverlay("slideout");
 +    TWFunc::FormatByArKT();
 +    return 0;
@@ -571,17 +582,18 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-09-22 22:21:43.790642289 +0530
-@@ -59,6 +59,8 @@
++++ /bootable/recovery/twrp-functions.cpp	2026-10-04 01:08:43.762922140 +0530
+@@ -59,6 +59,9 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
  #include "gui/pages.hpp"
++#include <libdm/dm.h>
 +#include "minuitwrp/minui.h"
 +extern void gr_reload_rotation(void);
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1661,401 @@
+@@ -1659,4 +1662,460 @@
  	return ret;
  }
  
@@ -747,6 +759,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        sync();
 +
 +        gr_reload_rotation();
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
 +        PageManager::RequestReload();
 +
 +        int future_rot = (next_rot + 90) % 360;
@@ -768,13 +781,26 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +    gui_print("\nUnmounting all required partitions...");
 +
-+    const std::string umount_script = R"ArKT(
-+        for i in sdcard data; do umount -lf /$i 2>/dev/null || true; done
-+        dmsetup remove -f userdata 2>/dev/null || true
-+        for i in esp win linux firmware mnt userdata metadata misc vendor; do umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/$i > /dev/null 2>&1 || true; done
-+    )ArKT";
-+    
-+    Exec_Cmd(umount_script);
++    std::vector<PartitionList> mountable_parts;
++    PartitionManager.Get_Partition_List("mount", &mountable_parts);
++
++    for (const PartitionList& list_part : mountable_parts) {
++        TWPartition* part = PartitionManager.Find_Partition_By_Path(list_part.Mount_Point);
++
++        if (part != nullptr) {
++            if (part->Get_Mount_Point() == "/data" ||
++                part->Get_Mount_Point() == "/sdcard" ||
++                part->Get_Mount_Point() == "/metadata") {
++                continue;
++            }
++
++            if (part->Actual_Block_Device.find("sda") != std::string::npos ||
++                part->Actual_Block_Device.find("bootdevice") != std::string::npos ||
++                part->Get_Super_Status()) {
++                part->UnMount(false);
++            }
++        }
++    }
 +}
 +
 +void TWFunc::PrintPartitionsByArKT() 
@@ -805,11 +831,14 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +void TWFunc::FormatByArKT()
 +{
++    DataManager::SetValue(TW_ACTION_BUSY, 1);
++
 +    bool format_win = DataManager::GetIntValue("arkt_format_win") == 1;
 +    bool format_esp = DataManager::GetIntValue("arkt_format_esp") == 1;
 +
 +    if (!format_win && !format_esp) {
 +        gui_print("\nNothing selected to format lol");
++        DataManager::SetValue(TW_ACTION_BUSY, 0);
 +        return;
 +    }
 +
@@ -825,20 +854,24 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    std::thread([format_win, format_esp] {
 +        std::this_thread::sleep_for(std::chrono::milliseconds(300));
 +
-+        const std::string win_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/win";
-+        const std::string esp_part = "/dev/block/platform/soc/1d84000.ufshc/by-name/esp";
++        TWPartition* win = PartitionManager.Find_Partition_By_Path("/win");
++        TWPartition* esp = PartitionManager.Find_Partition_By_Path("/esp");
 +
-+        if ((format_win && !TWFunc::Path_Exists(win_part)) ||
-+            (format_esp && !TWFunc::Path_Exists(esp_part))) {
++        const std::string win_part = win ? win->Actual_Block_Device : "";
++        const std::string esp_part = esp ? esp->Actual_Block_Device : "";
++
++        if ((format_win && (win_part.empty() || !TWFunc::Path_Exists(win_part))) ||
++            (format_esp && (esp_part.empty() || !TWFunc::Path_Exists(esp_part)))) {
 +            gui_print("\nNothing to format, check your partitions if it has Windows & ESP Partitions.");
++            DataManager::SetValue(TW_ACTION_BUSY, 0);
 +            return;
 +        }
 +
 +        sync();
-+        if (format_win)
-+            Exec_Cmd("umount -lf " + win_part + " >/dev/null 2>&1 || true");
-+        if (format_esp)
-+            Exec_Cmd("umount -lf " + esp_part + " >/dev/null 2>&1 || true");
++        if (format_win && win)
++            win->UnMount(false);
++        if (format_esp && esp)
++            esp->UnMount(false);
 +
 +        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 +
@@ -871,11 +904,14 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +            gui_print("\nformatted successfully!");
 +        }
 +        sync();
++        DataManager::SetValue(TW_ACTION_BUSY, 0);
 +    }).detach();
 +}
 +
 +void TWFunc::MscByArKT()
 +{
++    DataManager::SetValue(TW_ACTION_BUSY, 1);
++
 +    std::thread([] {
 +        gui_print("\nEnabling Mass Storage Mode!\n\n");
 +        CommonByArKT();
@@ -897,15 +933,32 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +        Exec_Cmd(msc_script);
 +        gui_print("\nDone!");
++        DataManager::SetValue(TW_ACTION_BUSY, 0);
 +    }).detach();
 +}
 +
 +void TWFunc::RestoreByArKT()
 +{
++    DataManager::SetValue(TW_ACTION_BUSY, 1);
++
 +    std::thread([] {
 +        gui_print("\nRestoring stock partition layout!\n\n");
 +        CommonByArKT();
-+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
++
++        for (const std::string& part : {"/sdcard", "/data"}) {
++            PartitionManager.UnMount_By_Path(part, true);
++        }
++        PartitionManager.UnMount_By_Path("/metadata", false);
++
++        android::dm::DeviceMapper& dm = android::dm::DeviceMapper::Instance();
++        int retries = 20;
++
++        while (dm.GetState("userdata") != android::dm::DmDeviceState::INVALID && retries > 0) {
++            dm.DeleteDevice("userdata");
++            std::this_thread::sleep_for(std::chrono::milliseconds(50));
++            retries--;
++        }
++        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 +
 +        gui_print("\nMaking partitions stock...");
 +        Exec_Cmd("sgdisk --clear --load-backup=/system/bin/gpt0 /dev/block/sda");
@@ -923,14 +976,31 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        PrintPartitionsByArKT();
 +        std::this_thread::sleep_for(std::chrono::milliseconds(700));
 +        PartitionSizesByArKT();
++        DataManager::SetValue(TW_ACTION_BUSY, 0);
 +    }).detach();
 +}
 +
 +void TWFunc::PartitionByArKT()
 +{
++    DataManager::SetValue(TW_ACTION_BUSY, 1);
++
 +    std::thread([] {
 +		gui_print("\nProceeding with Windows partitioning!\n\n");
 +        CommonByArKT();
++
++        for (const std::string& part : {"/sdcard", "/data"}) {
++            PartitionManager.UnMount_By_Path(part, true);
++        }
++        PartitionManager.UnMount_By_Path("/metadata", false);
++
++        android::dm::DeviceMapper& dm = android::dm::DeviceMapper::Instance();
++        int retries = 20;
++
++        while (dm.GetState("userdata") != android::dm::DmDeviceState::INVALID && retries > 0) {
++            dm.DeleteDevice("userdata");
++            std::this_thread::sleep_for(std::chrono::milliseconds(50));
++            retries--;
++        }
 +        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 +
 +        unsigned long long winend;
@@ -979,6 +1049,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        PrintPartitionsByArKT();
 +        std::this_thread::sleep_for(std::chrono::milliseconds(700));
 +        PartitionSizesByArKT();
++        DataManager::SetValue(TW_ACTION_BUSY, 0);
 +    }).detach();
 +}
 +

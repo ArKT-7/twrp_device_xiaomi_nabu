@@ -47,7 +47,13 @@ if getprop sys.usb.config | grep -q "mtp"; then
 fi
 
 for i in sdcard data; do umount -lf /$i 2>/dev/null; done
-dmsetup remove -f userdata 2>/dev/null
+for i in $(seq 1 20); do
+    dmctl delete userdata >/dev/null 2>&1
+    if ! [ -b "/dev/block/mapper/userdata" ]; then 
+        break
+    fi
+    sleep 0.05
+done
 for mnt in $(awk '$1 ~ /^\/dev\/block/ {print $2}' /proc/mounts); do umount -lf "$mnt" 2>/dev/null; done
 
 restoregpt() {

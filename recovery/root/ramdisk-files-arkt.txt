@@ -3552,7 +3552,6 @@ system/bin/sleep
 system/bin/fixgpt
 system/bin/printf
 system/bin/top
-system/bin/dmsetup
 system/bin/stat
 system/bin/rmmod
 system/bin/mount
@@ -3630,6 +3629,7 @@ system/bin/e2fsdroid
 system/bin/fsync
 system/bin/chown
 system/bin/reboot
+system/bin/dmctl
 system/bin/dmesg
 system/bin/uname
 system/bin/uniq

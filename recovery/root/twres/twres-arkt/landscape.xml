@@ -6054,34 +6054,39 @@
 			</text>
 
 			<button style="main_button">
+				<condition var1="tw_busy" var2="0"/>
 				<placement x="%col1_x_left%" y="%row2_y%"/>
 				<text>Enable MSC</text>
 				<action function="mscbyarkt"/>
 			</button>
 
 			<button style="main_button">
+				<condition var1="tw_busy" var2="0"/>
 				<placement x="%center_x%" y="%row2_y%"/>
 				<text>Format Partitions</text>
 				<actions>
 					<action function="set">arkt_format_esp=1</action>
 					<action function="set">arkt_format_win=1</action>
-					<action function="overlay">winformat_warn</action>
+					<action function="formatbyarkt"></action>
 				</actions>
 			</button>
 
 			<button style="main_button">
+				<condition var1="tw_busy" var2="0"/>
 				<placement x="%col1_x_left%" y="%row6a_y%"/>
 				<text>List Partitions</text>
 				<action function="printpartitionsbyarkt"/>
 			</button>
 
 			<button style="main_button">
+				<condition var1="tw_busy" var2="0"/>
 				<placement x="%center_x%" y="%row6a_y%"/>
 				<text>Retore Partitions</text>
 				<action function="restorebyarkt"/>
 			</button>
 
 			<button style="main_button">
+				<condition var1="tw_busy" var2="0"/>
 				<placement x="%center_x%" y="%row11_y%"/>
 				<text>Partitioning</text>
 				<action function="partitionaskbyarkt"/>
@@ -6226,7 +6231,7 @@
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
 					<action function="set">confirm_formatwin=</action>
-				    <action function="formatbyarkt"/>
+				    <action function="formatbyarkt">pass</action>
 				</actions>
 			</input>
 
