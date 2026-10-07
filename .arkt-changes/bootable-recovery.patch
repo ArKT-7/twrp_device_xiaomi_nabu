@@ -525,6 +525,25 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  }
  
  int OpenRecoveryScript::copy_script_file(string filename) {
+diff -ruN '--exclude=.git' /bootable/recovery/partitionmanager.cpp /bootable/recovery/partitionmanager.cpp
+--- /bootable/recovery/partitionmanager.cpp	2026-07-23 12:30:59.379261634 +0530
++++ /bootable/recovery/partitionmanager.cpp	2026-10-07 22:41:41.095606344 +0530
+@@ -2380,8 +2380,13 @@
+ 	std::vector<TWPartition*>::iterator iter;
+ 
+ 	for (iter = Partitions.begin(); iter != Partitions.end(); iter++) {
+-		if ((*iter)->Is_Storage)
+-			(*iter)->Mount(false);
++		if ((*iter)->Is_Storage) {
++            if ((*iter)->Is_Present) {
++                (*iter)->Mount(false);
++            } else {
++                LOGINFO("Skipping mount, partition '%s' is not present.\n", (*iter)->Mount_Point.c_str());
++            }
++	 	}
+ 	}
+ }
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/recovery/prebuilt/Android.mk
 --- /bootable/recovery/prebuilt/Android.mk	2025-12-23 23:01:31.708567270 +0530
 +++ /bootable/recovery/prebuilt/Android.mk	2026-03-28 11:58:10.983104954 +0530
