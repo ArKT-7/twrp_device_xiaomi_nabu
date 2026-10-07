@@ -6229,32 +6229,42 @@
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
+				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
 				<text>Mass storage is already enabled!</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FF9800"/>
-				<placement x="%center_x%" y="%row12_y%" placement="5"/>
-				<text>Do you want to Re-enable it?</text>
+				<placement x="%center_x%" y="%row9a_y%" placement="5"/>
+				<text>What would you like to do?</text>
 			</text>
 
-			<button style="button_third_width">
-				<placement x="180" y="%row14_y%"/>
-				<text>No</text>
+			<button style="main_button_half_height">
+				<placement x="%indent%" y="%row11a_y%"/>
+				<text>Restart MSC</text>
 				<actions>
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
+				    <action function="mscbyarkt">enable</action>
 				</actions>
 			</button>
 
-			<button style="button_third_width">
-				<placement x="580" y="%row14_y%"/>
-				<text>Yes</text>
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row11a_y%"/>
+				<text>Disable MSC</text>
 				<actions>
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
-				    <action function="mscbyarkt">pass</action>
+				    <action function="mscbyarkt">disable</action>
+				</actions>
+			</button>
+
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row14a_y%"/>
+				<text>Cancel</text>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
 				</actions>
 			</button>
 
@@ -6321,22 +6331,32 @@
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
-				<text>Mass storage mode is enabled!</text>
+				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
+				<text>Mass storage mode is currently enabled!</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FF9800"/>
-				<placement x="%center_x%" y="%row12_y%" placement="5"/>
-				<text>Please reboot to TWRP to use this option!</text>
+				<placement x="%center_x%" y="%row9a_y%" placement="5"/>
+				<text>You must disable MSC to use this option...</text>
 			</text>
-
-			<button style="button_third_width">
-				<placement x="580" y="%row14_y%"/>
-				<text>{@ok_btn=OK}</text>
+	
+			<button style="main_button_half_height">
+				<placement x="%indent%" y="%row11a_y%"/>
+				<text>Cancel</text>
 				<actions>
 					<action function="overlay"/>
 					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row11a_y%"/>
+				<text>Disable &amp; Continue</text>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				    <action function="mscbyarkt">disable_and_continue</action>
 				</actions>
 			</button>
 
@@ -6403,7 +6423,7 @@
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
+				<placement x="%center_x%" y="%row10a_y%" placement="5"/>
 				<text>Rotating Screen Now, Please wait!</text>
 			</text>
 
@@ -6536,19 +6556,19 @@
 			<background color="#000000CC"/>
 
 			<text>
-				<font resource="keylabel-small" color="#FFC107"/>
-				<placement x="%center_x%" y="%row10a_y%" placement="5"/>
+				<font resource="font_m" color="#FFC107"/>
+				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
 				<text>Invalid Windows Partition Size input!</text>
 			</text>
 
 			<text>
-				<font resource="keylabel-small" color="#FF9800"/>
-				<placement x="%center_x%" y="%row12_y%" placement="5"/>
+				<font resource="font_m" color="#FF9800"/>
+				<placement x="%center_x%" y="%row9a_y%" placement="5"/>
 				<text>Enter, Minimum: 25 GB | Maximum: %arkt_blockpart_display% GB</text>
 			</text>
 
-			<button style="button_third_width">
-				<placement x="580" y="%row14_y%"/>
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row11a_y%"/>
 				<text>{@ok_btn=OK}</text>
 				<actions>
 					<action function="overlay"/>
@@ -6620,24 +6640,24 @@
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row10_y%" placement="5"/>
+				<placement x="%center_x%" y="%row7_y%" placement="5"/>
 				<text>Windows partition: %win_part_size% GB</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FFC107"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
+				<placement x="%center_x%" y="%row8_y%" placement="5"/>
 				<text>Android partition: %userdata_part_size% GB</text>
 			</text>
 
 			<text>
 				<font resource="font_m" color="#FF9800"/>
-				<placement x="%center_x%" y="%row12a_y%" placement="5"/>
+				<placement x="%center_x%" y="%row9a_y%" placement="5"/>
 				<text>Do you want to confirm partitioning?</text>
 			</text>
 
-			<button style="button_third_width">
-				<placement x="180" y="%row14_y%"/>
+			<button style="main_button_half_height">
+				<placement x="%indent%" y="%row11a_y%"/>
 				<text>No</text>
 				<actions>
 					<action function="overlay"/>
@@ -6646,8 +6666,8 @@
 				</actions>
 			</button>
 
-			<button style="button_third_width">
-				<placement x="580" y="%row14_y%"/>
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row11a_y%"/>
 				<text>Yes</text>
 				<actions>
 					<action function="overlay"/>
