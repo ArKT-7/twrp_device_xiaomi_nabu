@@ -5950,6 +5950,88 @@
 			</action>
 		</page>
 
+		<page name="part_not_found">
+			<background color="#000000CC"/>
+
+			<text>
+				<font resource="font_m" color="#FFC107"/>
+				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
+				<text>Nothing to format!</text>
+			</text>
+
+			<text>
+				<font resource="font_m" color="#FF9800"/>
+				<placement x="%center_x%" y="%row9a_y%" placement="5"/>
+				<text>Windows &amp; ESP partitions do not exist!</text>
+			</text>
+
+			<button style="main_button_half_height">
+				<placement x="%center_x%" y="%row11a_y%"/>
+				<text>{@ok_btn=OK}</text>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<fill color="#000000">
+				<placement x="0" y="row25_y" w="%screen_width%" h="%navbar_height"/>
+			</fill>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="!=" var2="1"/>
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="back"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="=" var2="1"/>
+				<placement x="%back_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="console"/>
+				<condition var1="tw_busy" var2="0"/>
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<placement x="%center_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="home"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">home</action>
+				</actions>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="!=" var2="1"/>
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="console"/>
+				<condition var1="tw_busy" var2="0"/>
+				<action function="overlay">slideout</action>
+			</button>
+
+			<button>
+				<condition var1="tw_samsung_navbar" op="=" var2="1"/>
+				<placement x="%console_button_x%" y="%navbar_btn_y%" placement="4"/>
+				<image resource="back"/>
+				<condition var1="tw_busy" var2="0"/>
+				<actions>
+					<action function="overlay"/>
+					<action function="key">%tw_back%</action>
+				</actions>
+			</button>
+
+			<action>
+				<touch key="power+voldown"/>
+				<action function="screenshot"/>
+			</action>
+		</page>
+
 		<page name="winformat_warn">
 			<background color="#000000CC"/>
 
@@ -5966,7 +6048,7 @@
 			<text>
 				<font resource="font_m" color="#FFC107"/>
 				<placement x="%center_x%" y="%row4_y%" placement="5"/>
-				<text>This will not delete Andorid Data.</text>
+				<text>This will not delete Android Data.</text>
 			</text>
 
 			<text style="text_m">
@@ -5979,40 +6061,63 @@
 				<text>{@yes_continue=Type yes to continue.  Press back to cancel.}</text>
 			</text>
 
-			<!-- Only Win selected (ESP unchecked) -->
+			<!-- Windows checkbox - both present & both selected -->
 			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
+				<condition var1="arkt_format_win" op="=" var2="1"/>
+				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<placement x="200" y="%row10_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_true"/>
+				<action function="set">arkt_format_win=0</action>
+			</button>
+
+			<!-- Windows checkbox - both present, Only Win selected (force toggle ESP if unticked) -->
+			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
 				<condition var1="arkt_format_win" op="=" var2="1"/>
 				<condition var1="arkt_format_esp" op="=" var2="0"/>
 				<placement x="200" y="%row10_y%" textplacement="6"/>
 				<text>Format Windows</text>
 				<image resource="checkbox_true"/>
 				<action function="set">arkt_format_win=0</action>
-				<action function="set">arkt_format_esp=1</action> <!-- auto-re-enable ESP -->
+				<action function="set">arkt_format_esp=1</action>
 			</button>
 
-			<!-- Only ESP selected (Win unchecked) -->
+			<!-- Windows checkbox - both present, Win unselected -->
 			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
 				<condition var1="arkt_format_win" op="=" var2="0"/>
-				<condition var1="arkt_format_esp" op="=" var2="1"/>
 				<placement x="200" y="%row10_y%" textplacement="6"/>
 				<text>Format Windows</text>
 				<image resource="checkbox_false"/>
 				<action function="set">arkt_format_win=1</action>
 			</button>
 
-			<!-- Both selected -->
+			<!-- Windows checkbox - Win present, ESP Missing (locked to True) -->
 			<button style="checkbox">
-				<condition var1="arkt_format_win" op="=" var2="1"/>
-				<condition var1="arkt_format_esp" op="=" var2="1"/>
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="0"/>
 				<placement x="200" y="%row10_y%" textplacement="6"/>
 				<text>Format Windows</text>
 				<image resource="checkbox_true"/>
-				<action function="set">arkt_format_win=0</action>
 			</button>
 
-			<!-- Repeat exact same logic for ESP checkbox -->
-			<!-- ESP toggle when win=1 and esp=1 -->
+			<!-- Windows checkbox - Win missing (Lock to False) -->
 			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="0"/>
+				<placement x="200" y="%row10_y%" textplacement="6"/>
+				<text>Format Windows</text>
+				<image resource="checkbox_false"/>
+			</button>
+
+			<!-- ESP checkbox - both present & selected -->
+			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
 				<condition var1="arkt_format_win" op="=" var2="1"/>
 				<condition var1="arkt_format_esp" op="=" var2="1"/>
 				<placement x="600" y="%row10_y%" textplacement="6"/>
@@ -6021,25 +6126,58 @@
 				<action function="set">arkt_format_esp=0</action>
 			</button>
 
-			<!-- ESP toggle when win=0 and esp=1 (will fix win if needed) -->
+			<!-- ESP checkbox - both present, only ESP selected (force toggle Win if unticked) -->
 			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
 				<condition var1="arkt_format_win" op="=" var2="0"/>
 				<condition var1="arkt_format_esp" op="=" var2="1"/>
 				<placement x="600" y="%row10_y%" textplacement="6"/>
 				<text>Format ESP</text>
 				<image resource="checkbox_true"/>
 				<action function="set">arkt_format_esp=0</action>
-				<action function="set">arkt_format_win=1</action> <!-- fix: don't allow both off -->
+				<action function="set">arkt_format_win=1</action>
 			</button>
 
-			<!-- ESP toggle when unchecked -->
+			<!-- ESP checkbox - both present, ESP unselected -->
 			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="1"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
 				<condition var1="arkt_format_esp" op="=" var2="0"/>
 				<placement x="600" y="%row10_y%" textplacement="6"/>
 				<text>Format ESP</text>
 				<image resource="checkbox_false"/>
 				<action function="set">arkt_format_esp=1</action>
 			</button>
+
+			<!-- ESP checkbox - ESP present, Win missing (lock to true) -->
+			<button style="checkbox">
+				<condition var1="arkt_win_present" op="=" var2="0"/>
+				<condition var1="arkt_esp_present" op="=" var2="1"/>
+				<placement x="600" y="%row10_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_true"/>
+			</button>
+
+			<!-- ESP checkbox - ESP missing (lock to False) -->
+			<button style="checkbox">
+				<condition var1="arkt_esp_present" op="=" var2="0"/>
+				<placement x="600" y="%row10_y%" textplacement="6"/>
+				<text>Format ESP</text>
+				<image resource="checkbox_false"/>
+			</button>
+
+			<text style="text_m_fail">
+				<condition var1="arkt_win_present" op="=" var2="0"/>
+				<placement x="294" y="%row11_y%"/>
+				<text>(Not Present)</text>
+			</text>
+
+			<text style="text_m_fail">
+				<condition var1="arkt_esp_present" op="=" var2="0"/>
+				<placement x="652" y="%row11_y%"/>
+				<text>(Not Present)</text>
+			</text>
 
 			<input>
 				<placement x="504" y="%row13_y%" w="70" h="%input_height%"/>

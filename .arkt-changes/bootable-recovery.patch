@@ -30,7 +30,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2026-07-23 12:30:59.336490674 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-10-07 21:39:44.008682679 +0530
++++ /bootable/recovery/gui/action.cpp	2026-10-08 21:10:42.402592958 +0530
 @@ -210,6 +210,15 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -92,7 +92,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	op_status = 0; // success
  
  	operation_end(op_status);
-@@ -2373,3 +2392,226 @@
+@@ -2373,3 +2392,238 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -139,6 +139,18 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +int GUIAction::formatbyarkt(std::string arg)
 +{
 +	if (arg != "pass") {
++       bool win_present = TWFunc::PartitionPresentByArKT("win");
++       bool esp_present = TWFunc::PartitionPresentByArKT("esp");
++
++        if (!win_present && !esp_present) {
++            gui_changeOverlay("part_not_found");
++            return 0;
++        }
++        DataManager::SetValue("arkt_win_present", win_present ? 1 : 0);
++        DataManager::SetValue("arkt_esp_present", esp_present ? 1 : 0);
++        DataManager::SetValue("arkt_format_win", win_present ? 1 : 0);
++        DataManager::SetValue("arkt_format_esp", esp_present ? 1 : 0);
++
 +        gui_changeOverlay("winformat_warn");
 +        return 0;
 +    }
@@ -625,7 +637,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-10-07 21:33:14.690780384 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-10-08 21:14:13.842523539 +0530
 @@ -59,6 +59,9 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
@@ -636,7 +648,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1662,567 @@
+@@ -1659,4 +1662,546 @@
  	return ret;
  }
  
@@ -644,80 +656,49 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +void TWFunc::PartitionSizesByArKT() 
 +{
-+    std::string block_raw, win_raw, esp_raw, userdata_raw;
-+    std::string block_val = "NA", block_unit = "MB", block_display = "NA";
-+    std::string win_val = "NA", win_unit = "MB", win_display = "NA";
-+    std::string esp_val = "NA", esp_unit = "MB", esp_display = "NA";
-+    std::string userdata_val = "NA", userdata_unit = "MB", userdata_display = "NA";
-+
-+    const int RESERVED_START = 11222;
-+    const int RESERVED_END   = 7000;
-+
-+    auto clean_float_str = [](float value) -> std::string {
-+        std::ostringstream oss;
-+        oss.precision(2);
-+        oss << std::fixed << value;
-+        std::string out = oss.str();
-+        while (out.back() == '0') out.pop_back();
-+        if (out.back() == '.') out.pop_back();
-+        return out;
-+    };
-+
-+    if (Exec_Cmd("blockdev --getsize64 /dev/block/sda | awk '{print int($1 / 1000000)}'", block_raw, true) == 0) {
-+        block_raw.erase(std::remove(block_raw.begin(), block_raw.end(), '\n'), block_raw.end());
-+        if (!block_raw.empty()) {
-+            long long max = std::stoll(block_raw);
-+            long long usable_mb = max - RESERVED_START - RESERVED_END;
-+            long long winmax = usable_mb / 1000;
-+
-+            block_val = std::to_string(usable_mb);
-+            block_display = std::to_string(winmax);
-+        }
++    unsigned long long sda_byets = TWFunc::IOCTL_Get_Block_Size("/dev/block/sda");
++    std::string block_val = "NA", block_display = "NA";
++    
++    if (sda_byets > 0) {
++        long long usable_mb = (sda_byets / 1000000) - 11222 - 7000;
++        block_val = std::to_string(usable_mb);
++        block_display = std::to_string(usable_mb / 1000);
++        LOGINFO("BLOCK Partition Aligned Size: %s MB, Display: %s GB\n", block_val.c_str(), block_display.c_str());
 +    }
-+
 +    DataManager::SetValue("arkt_blockpart_size", block_val);
 +    DataManager::SetValue("arkt_blockpart_display", block_display);
 +
-+    if (block_val != "NA")
-+        LOGINFO("BLOCK Partition Aligned Size: %s MB, Display: %s GB\n", block_val.c_str(), block_display.c_str());
-+
-+    auto ParsePartitionSize = [&](const std::string& part_name, std::string& out_raw,
-+                                  std::string& out_val, std::string& out_unit, std::string& out_display,
-+                                  const std::string& arkt_key) {
-+        std::string cmd = "parted /dev/block/sda unit MB print | awk -v name=\"" + part_name + "\" "
-+                  "'$0 ~ /^[ 0-9]+/ { name_col=0; for(i=1;i<=NF;i++) if($i==name) name_col=i; "
-+                  "if(name_col > 0 && $(name_col)==name) { gsub(\"MB\", \"\", $4); print $4 } }'";
++    auto SetPartSize = [&](const std::string& name) {
++        std::string val = "NA", unit = "", disp = "NA";
 +        
-+        if (Exec_Cmd(cmd, out_raw, true) == 0) {
-+            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), '\n'), out_raw.end());
-+            out_raw.erase(std::remove(out_raw.begin(), out_raw.end(), ' '), out_raw.end());
-+
-+            if (!out_raw.empty()) {
-+                float mb = std::stof(out_raw);
++        if (TWFunc::PartitionPresentByArKT(name)) {
++            unsigned long long bytes = TWFunc::IOCTL_Get_Block_Size(("/dev/block/bootdevice/by-name/" + name).c_str());
++            if (bytes > 0) {
++                float mb = bytes / 1000000.0f;
 +                if (mb >= 1000.0f) {
-+                    out_val = clean_float_str(mb / 1000.0f);
-+                    out_unit = "GB";
++                    char buf[16];
++                    snprintf(buf, sizeof(buf), "%.2f",mb / 1000.0f);
++                    val = buf;
++                    while (val.back() == '0') val.pop_back();
++                    if (val.back() == '.') val.pop_back();
++                    unit = "GB";
 +                } else {
-+                    out_val = out_raw;
-+                    out_unit = "MB";
++                    val = std::to_string(static_cast<int>(mb));
++                    unit = "MB";
 +                }
++                disp = val + " " +unit;
++                LOGINFO("%s Partition Size: %s\n", name.c_str(), disp.c_str());
 +            }
 +        }
-+
-+        if (out_val == "NA") out_unit = "";
-+        out_display = (out_val == "NA") ? "NA" : out_val + " " + out_unit;
-+
-+        DataManager::SetValue("arkt_" + arkt_key + "part_size", out_val);
-+        DataManager::SetValue("arkt_" + arkt_key + "part_unit", out_unit);
-+        DataManager::SetValue("arkt_" + arkt_key + "part_display", out_display);
-+
-+        if (out_val != "NA")
-+            LOGINFO("%s Partition Size: %s\n", arkt_key.c_str(), out_display.c_str());
++        
++        DataManager::SetValue("arkt_" + name + "part_size", val);
++        DataManager::SetValue("arkt_" + name + "part_unit", unit);
++        DataManager::SetValue("arkt_" + name + "part_display", disp);
 +    };
 +
-+    ParsePartitionSize("win", win_raw, win_val, win_unit, win_display, "win");
-+    ParsePartitionSize("esp", esp_raw, esp_val, esp_unit, esp_display, "esp");
-+    ParsePartitionSize("userdata", userdata_raw, userdata_val, userdata_unit, userdata_display, "userdata");
++    SetPartSize("win");
++    SetPartSize("esp");
++    SetPartSize("userdata");
 +}
 +
 +static std::string GetRotationNameByArKT(int rot) {
@@ -817,12 +798,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    std::string esp_part;
 +};
 +
++bool TWFunc::PartitionPresentByArKT(const std::string& name) {
++    return Path_Exists("/dev/block/bootdevice/by-name/" + name);
++}
++
 +static WinEspArKT FindWinEspByArKT() {
 +    WinEspArKT r;
 +    r.win = PartitionManager.Find_Partition_By_Path("/win");
 +    r.esp = PartitionManager.Find_Partition_By_Path("/esp");
-+    r.win_part = (r.win && !r.win->Actual_Block_Device.empty()) ? r.win->Actual_Block_Device : "";
-+    r.esp_part = (r.esp && !r.esp->Actual_Block_Device.empty()) ? r.esp->Actual_Block_Device : "";
++    if (TWFunc::PartitionPresentByArKT("win")) r.win_part = "/dev/block/bootdevice/by-name/win";
++    if (TWFunc::PartitionPresentByArKT("esp")) r.esp_part = "/dev/block/bootdevice/by-name/esp";
 +    return r;
 +}
 +
@@ -1100,6 +1085,10 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +
 +        gui_print("\nresizing userdata(Android) partition...");
 +        Exec_Cmd("parted -s /dev/block/sda resizepart 31 100%");
++		
++        Exec_Cmd("ln -sf /dev/block/sda31 /dev/block/bootdevice/by-name/userdata");
++        Exec_Cmd("rm -f /dev/block/bootdevice/by-name/win");
++        Exec_Cmd("rm -f /dev/block/bootdevice/by-name/esp");
 +
 +        gui_print("\nFormatting userdata...");
 +        Exec_Cmd("make_f2fs -f -g android /dev/block/sda31");
@@ -1181,15 +1170,17 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +            Exec_Cmd("echo -e \"x\\nj\\n\\nk\\n\\nw\\nY\\n\" | gdisk " + device);
 +        }
 +
++        gui_print("\nRefershing symlinks...");
++        Exec_Cmd("ln -sf /dev/block/sda32 /dev/block/bootdevice/by-name/win");
++        Exec_Cmd("ln -sf /dev/block/sda31 /dev/block/bootdevice/by-name/esp");
++        Exec_Cmd("ln -sf /dev/block/sda33 /dev/block/bootdevice/by-name/userdata");
++
 +        sync();
 +        PrintPartitionsByArKT();
 +        std::this_thread::sleep_for(std::chrono::milliseconds(700));
 +        PartitionSizesByArKT();
 +
 +        gui_print("\nMounting Windows & ESP partitions...");
-+
-+        Exec_Cmd("ln -sf /dev/block/sda32 /dev/block/bootdevice/by-name/win");
-+        Exec_Cmd("ln -sf /dev/block/sda31 /dev/block/bootdevice/by-name/esp");
 +
 +        PartitionManager.Mount_By_Path("/win", true);
 +        PartitionManager.Mount_By_Path("/esp", true);
@@ -1206,8 +1197,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
 --- /bootable/recovery/twrp-functions.hpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2026-10-04 01:38:16.363967530 +0530
-@@ -75,6 +75,17 @@
++++ /bootable/recovery/twrp-functions.hpp	2026-10-08 20:55:57.359517102 +0530
+@@ -75,6 +75,18 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
  	static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
@@ -1222,6 +1213,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recov
 +	static void RevertMscByArKT(std::string next_action = "");
 +	static void RestoreByArKT();
 +	static void PartitionByArKT();
++	static bool PartitionPresentByArKT(const std::string& name);
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path
