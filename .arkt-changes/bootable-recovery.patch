@@ -637,7 +637,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-10-08 21:14:13.842523539 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-10-09 22:31:39.587766729 +0530
 @@ -59,6 +59,9 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
@@ -648,7 +648,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1662,546 @@
+@@ -1659,4 +1662,563 @@
  	return ret;
  }
  
@@ -812,8 +812,34 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +}
 +
 +static void FlushBlockDeviceByArKT(const std::string& dev) {
-+    if (!dev.empty())
-+        TWFunc::Exec_Cmd("blockdev --flushbufs " + dev + " 2>/dev/null || true");
++    if (!dev.empty()) {
++        int fd = open(dev.c_str(), O_RDONLY);
++        if (fd >= 0) {
++            ioctl(fd, BLKFLSBUF, 0);
++            close(fd);
++        }
++    }
++}
++
++static void ForceUnmountByArKT(const std::string& path) {
++    TWPartition* part = PartitionManager.Find_Partition_By_Path(path);
++    std::string actual_block;
++    if (part) {
++        actual_block = part->Actual_Block_Device;
++        if (!actual_block.empty()) {
++            FlushBlockDeviceByArKT(actual_block);
++        }
++        part->UnMount(false);
++    } else {
++        PartitionManager.UnMount_By_Path(path, true); 
++    }
++    umount2(path.c_str(), MNT_DETACH|MNT_FORCE);
++    if (!actual_block.empty()) {
++        TWFunc::Exec_Cmd("umount -lf " + actual_block + " >/dev/null 2>&1 || true");
++    }
++    if (path == "/win" || path == "/esp" || path == "/metadata" || path == "/userdata") {
++        TWFunc::Exec_Cmd("umount -lf /dev/block/bootdevice/by-name" + path + " >/dev/null 2>&1 || true");
++    }
 +}
 +
 +static void EnableMtpByArKT() {
@@ -838,34 +864,27 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    gui_print("\nUnmounting all required partitions...");
 +    sync();
 +
-+    WinEspArKT we = FindWinEspByArKT();
-+    FlushBlockDeviceByArKT(we.win_part);
-+    if (we.win) we.win->UnMount(false);
-+    FlushBlockDeviceByArKT(we.esp_part);
-+    if (we.esp) we.esp->UnMount(false);
++    ForceUnmountByArKT("/win");
++    ForceUnmountByArKT("/esp");
 +
 +    std::vector<PartitionList> mountable_parts;
 +    PartitionManager.Get_Partition_List("mount", &mountable_parts);
 +
 +    for (const PartitionList& list_part : mountable_parts) {
 +        TWPartition* part = PartitionManager.Find_Partition_By_Path(list_part.Mount_Point);
-+
 +        if (part == nullptr) continue;
 +
 +        const std::string mp = part->Get_Mount_Point();
-+        if (mp == "/data" || mp == "/sdcard" || mp == "/metadata" ||
-+            mp == "/win" || mp == "/esp") {
-+            continue;
-+        }
++        if (mp == "/data" || mp == "/sdcard" || mp == "/metadata" || mp == "/win" || mp == "/esp") continue;
 +
 +        if (part->Actual_Block_Device.find("sda") != std::string::npos ||
 +            part->Actual_Block_Device.find("bootdevice") != std::string::npos ||
 +            part->Get_Super_Status()) {
-+            part->UnMount(false);
++            ForceUnmountByArKT(mp);
 +        }
 +    }
 +    sync();
-+    Exec_Cmd("blockdev --flushbufs /dev/block/sda 2>/dev/null || true");
++    FlushBlockDeviceByArKT("/dev/block/sda");
 +}
 +
 +void TWFunc::PrintPartitionsByArKT() 
@@ -931,10 +950,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        sync();
 +        PartitionManager.Disable_MTP();
 +        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-+        if (format_win && we.win)
-+            we.win->UnMount(false);
-+        if (format_esp && we.esp)
-+            we.esp->UnMount(false);
++        if (format_win) ForceUnmountByArKT("/win");
++        if (format_esp) ForceUnmountByArKT("/esp");
 +
 +        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 +
@@ -1026,10 +1043,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        WinEspArKT we = FindWinEspByArKT();
 +
 +        if (!we.win_part.empty()) {
-+            FlushBlockDeviceByArKT(we.win_part);
++            ForceUnmountByArKT("/win");
 +            Exec_Cmd("ntfsfix -d " + we.win_part + " >/dev/null 2>&1 || true");
 +        }
-+        Exec_Cmd("blockdev --flushbufs /dev/block/sda 2>/dev/null || true");
++        
++        ForceUnmountByArKT("/esp");
++        FlushBlockDeviceByArKT("/dev/block/sda");
 +        Exec_Cmd("echo 3 > /proc/sys/vm/drop_caches");
 +
 +        if (next_action.empty()) {
@@ -1065,10 +1084,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +        gui_print("\nRestoring stock partition layout!\n\n");
 +        CommonByArKT();
 +
-+        for (const std::string& part : {"/sdcard", "/data"}) {
-+            PartitionManager.UnMount_By_Path(part, true);
++        for (const std::string& part : {"/sdcard", "/data", "/metadata"}) {
++            ForceUnmountByArKT(part);
 +        }
-+        PartitionManager.UnMount_By_Path("/metadata", false);
 +
 +        android::dm::DeviceMapper& dm = android::dm::DeviceMapper::Instance();
 +        int retries = 20;
@@ -1113,10 +1131,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +		gui_print("\nProceeding with Windows partitioning!\n\n");
 +        CommonByArKT();
 +
-+        for (const std::string& part : {"/sdcard", "/data"}) {
-+            PartitionManager.UnMount_By_Path(part, true);
++        for (const std::string& part : {"/sdcard", "/data", "/metadata"}) {
++            ForceUnmountByArKT(part);
 +        }
-+        PartitionManager.UnMount_By_Path("/metadata", false);
 +
 +        android::dm::DeviceMapper& dm = android::dm::DeviceMapper::Instance();
 +        int retries = 20;
