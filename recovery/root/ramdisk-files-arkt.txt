@@ -3629,6 +3629,7 @@ system/bin/fsync
 system/bin/chown
 system/bin/reboot
 system/bin/dmctl
+system/bin/clean_vintf.sh
 system/bin/dmesg
 system/bin/uname
 system/bin/uniq

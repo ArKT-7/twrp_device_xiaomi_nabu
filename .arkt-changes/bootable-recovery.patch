@@ -637,7 +637,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-10-09 22:31:39.587766729 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-10-11 23:51:53.588202819 +0530
 @@ -59,6 +59,9 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
@@ -648,7 +648,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1662,563 @@
+@@ -1659,4 +1662,572 @@
  	return ret;
  }
  
@@ -742,7 +742,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    PartitionManager.Mount_By_Path("/metadata", false);
 +
 +    std::string rot_str, ram_str;
-+    if (TWFunc::read_file("/metadata/TWRP/rotation_state", rot_str) != 0 || rot_str.empty()) rot_str = "0";
++    if (TWFunc::read_file("/metadata/TWRP/rotation_state", rot_str) != 0 || rot_str.empty()) {
++        if (TWFunc::read_file("/twres/twres-arkt/rotation_state", rot_str) != 0 || rot_str.empty()) {
++            rot_str = "0";
++        }
++    }
++
 +    if (TWFunc::read_file("/twres/twres-arkt/rotation_state", ram_str) != 0 || ram_str.empty()) ram_str = "0";
 +
 +    int saved = atoi(rot_str.c_str());
@@ -752,6 +757,10 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recov
 +    DataManager::SetValue("arkt_next_rotation", GetRotationNameByArKT(next));
 +
 +    property_set("persist.twrp.rotation", std::to_string(saved).c_str());
++
++    Exec_Cmd("mkdir -p /metadata/TWRP");
++    TWFunc::write_to_file("/metadata/TWRP/rotation_state", std::to_string(saved));
++
 +    Exec_Cmd("mkdir -p /twres/twres-arkt");
 +    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", std::to_string(saved));
 +
