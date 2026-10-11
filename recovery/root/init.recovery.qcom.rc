@@ -1,5 +1,8 @@
 import /init.recovery.qcom_decrypt.rc
 
+on early-init
+    start clean_vintf
+
 on init
     write /sys/class/backlight/panel0-backlight/brightness 200
     # Create location for fs_mgr to store abbreviated output from filesystem
@@ -17,3 +20,11 @@ on fs
 on boot
     start health-hal-2-1
     setprop sys.usb.config adb
+
+#drops VINTF fragments TWRP did not ship (they hang TWRP on splash via a keystore2 crash loop)
+service clean_vintf /system/bin/sh /system/bin/clean_vintf.sh
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
