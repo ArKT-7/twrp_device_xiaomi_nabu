@@ -332,10 +332,57 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    return 0;
 +}
 \ No newline at end of file
+diff -ruN '--exclude=.git' /bootable/recovery/gui/fill.cpp /bootable/recovery/gui/fill.cpp
+--- /bootable/recovery/gui/fill.cpp	2026-07-23 12:30:59.336490674 +0530
++++ /bootable/recovery/gui/fill.cpp	2026-10-15 01:50:44.306144622 +0530
+@@ -32,6 +32,7 @@
+ #include <time.h>
+ #include <unistd.h>
+ #include <stdlib.h>
++#include "../data.hpp"
+ 
+ #include <string>
+ 
+@@ -45,6 +46,7 @@
+ 
+ GUIFill::GUIFill(xml_node<>* node) : GUIObject(node)
+ {
++	mRadius = 0;
+ 	bool has_color = false;
+ 	mColor = LoadAttrColor(node, "color", &has_color);
+ 	if (!has_color) {
+@@ -52,6 +54,8 @@
+ 		return;
+ 	}
+ 
++	mRadius = LoadAttrIntScaleX(node, "radius", 0);
++
+ 	// Load the placement
+ 	LoadPlacement(FindNode(node, "placement"), &mRenderX, &mRenderY, &mRenderW, &mRenderH);
+ 
+@@ -63,8 +67,9 @@
+ 	if (!isConditionTrue())
+ 		return 0;
+ 
++	int radius = DataManager::GetIntValue("arkt_rounded_corners") ? mRadius : 0;
+ 	gr_color(mColor.red, mColor.green, mColor.blue, mColor.alpha);
+-	gr_fill(mRenderX, mRenderY, mRenderW, mRenderH);
++	gr_fill_round(mRenderX, mRenderY, mRenderW, mRenderH, radius);
+ 	return 0;
+ }
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2026-07-23 12:30:59.337074766 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-09-21 06:05:24.295073703 +0530
-@@ -335,6 +335,15 @@
++++ /bootable/recovery/gui/objects.hpp	2026-10-14 20:20:43.881693608 +0530
+@@ -256,6 +256,7 @@
+ 
+ protected:
+ 	COLOR mColor;
++	int mRadius;
+ };
+ 
+ // GUIAction - Used for standard actions
+@@ -335,6 +336,15 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
@@ -394,6 +441,32 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/pages.cpp /bootable/recovery/g
  	ret = (mCurrentPage ? mCurrentPage->Render() : -1);
  	if (ret < 0)
  		return ret;
+diff -ruN '--exclude=.git' /bootable/recovery/gui/scrolllist.cpp /bootable/recovery/gui/scrolllist.cpp
+--- /bootable/recovery/gui/scrolllist.cpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/scrolllist.cpp	2026-10-15 01:51:15.091638243 +0530
+@@ -303,8 +303,9 @@
+ 		gr_fill(centerX - mFastScrollLineW / 2, y + boxH, mFastScrollLineW, fHeight - boxY - boxH);
+ 
+ 		// box
++		int radius = DataManager::GetIntValue("arkt_rounded_corners") ? (boxW / 2) : 0;
+ 		gr_color(mFastScrollRectColor.red, mFastScrollRectColor.green, mFastScrollRectColor.blue, mFastScrollRectColor.alpha);
+-		gr_fill(x, y, boxW, boxH);
++		gr_fill_round(x, y, boxW, boxH, radius);
+ 
+ 		mFastScrollRectCurrentY = boxY;
+ 		mFastScrollRectCurrentH = boxH;
+diff -ruN '--exclude=.git' /bootable/recovery/gui/text.cpp /bootable/recovery/gui/text.cpp
+--- /bootable/recovery/gui/text.cpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/text.cpp	2026-10-15 01:49:09.424961512 +0530
+@@ -79,6 +79,8 @@
+ 	child = FindNode(node, "noscaling");
+ 	if (child) {
+ 		scaleWidth = false;
++	} else if (mRenderW > 0) {
++		maxWidth = mRenderW;
+ 	} else {
+ 		if (mPlacement == TOP_LEFT || mPlacement == BOTTOM_LEFT) {
+ 			maxWidth = gr_fb_width() - mRenderX;
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/recovery/minuitwrp/events.cpp
 --- /bootable/recovery/minuitwrp/events.cpp	2026-07-23 12:30:59.374978875 +0530
 +++ /bootable/recovery/minuitwrp/events.cpp	2026-09-21 13:29:57.878208664 +0530
@@ -468,7 +541,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/rec
  #endif
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
 --- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
-+++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-14 18:52:16.999009905 +0530
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-14 20:20:43.883991258 +0530
 @@ -30,6 +30,7 @@
  #include <linux/kd.h>
  
@@ -477,7 +550,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  
  #include <cutils/properties.h>
  #include <pixelflinger/pixelflinger.h>
-@@ -246,26 +247,270 @@
+@@ -246,26 +247,291 @@
  void gr_fill(int x, int y, int w, int h)
  {
      GGLContext *gl = gr_context;
@@ -530,9 +603,30 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
          gl->enable(gl, GGL_BLEND);
  }
  
-+
 +// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
 +
++void gr_fill_round(int x, int y, int w, int h, int r)
++{
++    r = std::min(r, std::min(w, h) / 2);
++    if (r <= 0) {
++        gr_fill(x, y, w, h);
++        return;
++    }
++
++    // square middle part first, then the four corners one row at a time
++    if (h > 2 * r) {
++        gr_fill(x, y + r, w, h - 2 * r);
++    }
++
++    for (int row = 0; row < r; row++) {
++        // how far the middlle of this row is from the centre of the corner circle
++        float dy = r - row - 0.5f;
++        int inset = r - (int)(sqrtf(r * r - dy * dy) + 0.5f);
++
++        gr_fill(x + inset, y + row, w - 2 * inset, 1);
++        gr_fill(x + inset, y + h - 1 - row, w - 2 * inset, 1);
++    }
++}
 +
 +// Background blur for translucent pages (overloays basically) the page behind is shrunk,
 +// blurred with two box blur passes (close enough to a gaussian) and scaled back
@@ -757,7 +851,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy)
  {
      if (gr_context == NULL) {
-@@ -357,18 +602,36 @@
+@@ -357,18 +623,36 @@
      ms->format = gr_draw->format;
  }
  
@@ -798,7 +892,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  #ifdef MSM_BSP
      gr_backend = open_overlay();
      if (gr_backend) {
-@@ -428,6 +691,10 @@
+@@ -428,6 +712,10 @@
  void gr_exit(void)
  {
      gr_backend->exit(gr_backend);
@@ -811,11 +905,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  int gr_fb_width(void)
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/include/minuitwrp/minui.h /bootable/recovery/minuitwrp/include/minuitwrp/minui.h
 --- /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-07-23 12:30:59.375351105 +0530
-+++ /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-10-14 17:26:44.089745873 +0530
-@@ -48,6 +48,9 @@
++++ /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-10-14 20:20:43.884375929 +0530
+@@ -48,6 +48,10 @@
  void gr_clip(int x, int y, int w, int h);
  void gr_noclip();
  void gr_fill(int x, int y, int w, int h);
++void gr_fill_round(int x, int y, int w, int h, int r);
 +void gr_blur(int radius, int exclude_y);
 +void gr_blur_clear_cache(void);
 +void gr_blur_new_frame(void);
