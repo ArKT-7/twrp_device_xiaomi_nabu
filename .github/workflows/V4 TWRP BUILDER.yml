@@ -2,7 +2,7 @@ name: V4-MODDED TWRP BUILD
 
 on:
   # push:
-  #   branches: [ "mod-windows" ]
+  #   branches: [ "mod-win-CN" ]
 
   workflow_dispatch:
   
@@ -12,7 +12,7 @@ env:
   MANIFEST_BRANCH: twrp-12.1
 
   DEVICE_TREE_URL: https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git
-  DEVICE_TREE_BRANCH: mod-windows
+  DEVICE_TREE_BRANCH: mod-win-CN
   DEVICE_PATH: device/xiaomi/nabu
 
   DEVICE_NAME: nabu
@@ -97,7 +97,7 @@ jobs:
       run: |
         OUT=arkt/out/target/product/${DEVICE_NAME}
         IMG=V4-MODDED-TWRP-WINDOWS-$(date +'%d-%m').img
-        TEST_IMG=TEST_$IMG
+        TEST_IMG=TEST_CN_$IMG
         ARTIFACT_NAME=UNZIP_IT-${IMG%.img}
         mv "$OUT/boot.img" "$OUT/$IMG"
         cp "$OUT/$IMG" "$OUT/$TEST_IMG"

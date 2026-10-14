@@ -73,7 +73,7 @@ repo sync -j$(nproc --all) --force-sync
 ##### Now, clone the TWRP mod device tree for the Xiaomi Pad 5 (Nabu):
 
 ```bash
-git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod-windows device/xiaomi/nabu
+git clone https://github.com/ArKT-7/twrp_device_xiaomi_nabu.git -b mod-win-CN device/xiaomi/nabu
 ```
 
 #### 🧩 **Step 3: Patch sources for Mod twrp**
