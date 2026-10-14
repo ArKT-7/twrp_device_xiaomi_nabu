@@ -468,8 +468,65 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/rec
  #endif
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
 --- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
-+++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-14 17:39:51.515230943 +0530
-@@ -266,6 +266,230 @@
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-14 18:52:16.999009905 +0530
+@@ -30,6 +30,7 @@
+ #include <linux/kd.h>
+ 
+ #include <time.h>
++#include <math.h>
+ 
+ #include <cutils/properties.h>
+ #include <pixelflinger/pixelflinger.h>
+@@ -246,26 +247,270 @@
+ void gr_fill(int x, int y, int w, int h)
+ {
+     GGLContext *gl = gr_context;
+-    int x0_disp, y0_disp, x1_disp, y1_disp;
+     int l_disp, r_disp, t_disp, b_disp;
+ 
+     if(gr_is_curr_clr_opaque)
+         gl->disable(gl, GGL_BLEND);
+ 
+-    x0_disp = ROTATION_X_DISP(x, y, gr_draw->width);
+-    y0_disp = ROTATION_Y_DISP(x, y, gr_draw->height);
+-    x1_disp = ROTATION_X_DISP(x + w, y + h, gr_draw->width);
+-    y1_disp = ROTATION_Y_DISP(x + w, y + h, gr_draw->height);
+-    l_disp = std::min(x0_disp, x1_disp);
+-    r_disp = std::max(x0_disp, x1_disp);
+-    t_disp = std::min(y0_disp, y1_disp);
+-    b_disp = std::max(y0_disp, y1_disp);
++    // ROTATION_X_DISP/Y_DISP map single pixels, so feednig them the far corner
++    // of a rectangle lands one pixel short when the screen is rotated and the
++    // last row or column never gets painted, Map the whole rectnagle instead, the same way gr_clip() does
++    switch (gr_rotation) {
++        case 90:
++            l_disp = gr_draw->width - y - h;
++            t_disp = x;
++            r_disp = gr_draw->width - y;
++            b_disp = x + w;
++            break;
++        case 180:
++            l_disp = gr_draw->width - x - w;
++            t_disp = gr_draw->height - y - h;
++            r_disp = gr_draw->width - x;
++            b_disp = gr_draw->height - y;
++            break;
++        case 270:
++            l_disp = y;
++            t_disp = gr_draw->height - x - w;
++            r_disp = y + h;
++            b_disp = gr_draw->height - x;
++            break;
++        default:
++            l_disp = x;
++            t_disp = y;
++            r_disp = x + w;
++            b_disp = y + h;
++            break;
++    }
+     gl->recti(gl, l_disp, t_disp, r_disp, b_disp);
+ 
+     if(gr_is_curr_clr_opaque)
          gl->enable(gl, GGL_BLEND);
  }
  
@@ -700,7 +757,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy)
  {
      if (gr_context == NULL) {
-@@ -357,18 +581,36 @@
+@@ -357,18 +602,36 @@
      ms->format = gr_draw->format;
  }
  
@@ -741,7 +798,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  #ifdef MSM_BSP
      gr_backend = open_overlay();
      if (gr_backend) {
-@@ -428,6 +670,10 @@
+@@ -428,6 +691,10 @@
  void gr_exit(void)
  {
      gr_backend->exit(gr_backend);
