@@ -351,6 +351,49 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
+diff -ruN '--exclude=.git' /bootable/recovery/gui/pages.cpp /bootable/recovery/gui/pages.cpp
+--- /bootable/recovery/gui/pages.cpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/pages.cpp	2026-10-14 16:01:04.188004720 +0530
+@@ -522,9 +522,20 @@
+ 
+ int Page::Render(void)
+ {
++	bool requires_blur = (mBackground.alpha > 0 && mBackground.alpha < 255);
++	int separator_height = DataManager::GetIntValue("arkt_status_separator_y");
++	int blur_start_y = DataManager::GetIntValue("arkt_blur_exclude_status") ? separator_height : 0;
++	int fill_start_y = (requires_blur && blur_start_y && DataManager::GetIntValue("arkt_tint_exclude_status")) ? separator_height : 0;
++	int blur_radius = DataManager::GetIntValue("arkt_blur_val") * 67 / 100;
++
++	if (requires_blur && blur_radius > 0)
++		gr_blur(blur_radius, blur_start_y);
++
+ 	// Render background
+-	gr_color(mBackground.red, mBackground.green, mBackground.blue, mBackground.alpha);
+-	gr_fill(0, 0, gr_fb_width(), gr_fb_height());
++	if (mBackground.alpha > 0) {
++		gr_color(mBackground.red, mBackground.green, mBackground.blue, mBackground.alpha);
++		gr_fill(0, fill_start_y, gr_fb_width(), gr_fb_height() - fill_start_y);
++	}
+ 
+ 	// Render remaining objects
+ 	std::vector<RenderObject*>::iterator iter;
+@@ -644,6 +655,8 @@
+ 
+ void Page::SetPageFocus(int inFocus)
+ {
++	gr_blur_clear_cache();
++
+ 	// Render remaining objects
+ 	std::vector<RenderObject*>::iterator iter;
+ 	for (iter = mRenders.begin(); iter != mRenders.end(); iter++)
+@@ -1106,6 +1119,7 @@
+ {
+ 	int ret;
+ 
++	gr_blur_new_frame();
+ 	ret = (mCurrentPage ? mCurrentPage->Render() : -1);
+ 	if (ret < 0)
+ 		return ret;
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/recovery/minuitwrp/events.cpp
 --- /bootable/recovery/minuitwrp/events.cpp	2026-07-23 12:30:59.374978875 +0530
 +++ /bootable/recovery/minuitwrp/events.cpp	2026-09-21 13:29:57.878208664 +0530
@@ -425,8 +468,239 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/rec
  #endif
 diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
 --- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
-+++ /bootable/recovery/minuitwrp/graphics.cpp	2026-09-21 20:27:30.773939218 +0530
-@@ -357,18 +357,36 @@
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-14 17:39:51.515230943 +0530
+@@ -266,6 +266,230 @@
+         gl->enable(gl, GGL_BLEND);
+ }
+ 
++
++// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
++
++
++// Background blur for translucent pages (overloays basically) the page behind is shrunk,
++// blurred with two box blur passes (close enough to a gaussian) and scaled back
++// up, the blurred copy is kept while the overlay is open, so the page behind it is only blured once
++#define BLUR_DOWNSCALE_SHIFT 1
++
++struct BlurColorSum { int r, g, b; };
++
++static inline int clamp_int(int value, int low, int high) {
++    return value < low ? low : (value > high ? high : value);
++}
++
++static struct {
++    unsigned char* cache_buffer;
++    unsigned char* tmp_buffer;
++    size_t allocated_size;
++    BlurColorSum* column_sums;
++    int sums_width;
++    int radius, x_offset, y_offset, width, height;
++    bool is_valid;
++    bool applied_this_frame;
++} blur_state;
++
++void gr_blur_clear_cache(void) {
++    blur_state.is_valid = false;
++}
++
++// called at the start of every render pass, so stacked overlays blur only once
++void gr_blur_new_frame(void) {
++    blur_state.applied_this_frame = false;
++}
++
++static bool allocate_blur_buffers(size_t required_bytes, int scaled_width) {
++    if (blur_state.allocated_size < required_bytes) {
++        free(blur_state.cache_buffer);
++        free(blur_state.tmp_buffer);
++        blur_state.cache_buffer = (unsigned char*)malloc(required_bytes);
++        blur_state.tmp_buffer = (unsigned char*)malloc(required_bytes);
++        blur_state.allocated_size = (blur_state.cache_buffer && blur_state.tmp_buffer) ? required_bytes : 0;
++        blur_state.is_valid = false;
++    }
++
++    if (blur_state.sums_width < scaled_width) {
++        free(blur_state.column_sums);
++        blur_state.column_sums = (BlurColorSum*)malloc(scaled_width * sizeof(BlurColorSum));
++        blur_state.sums_width = blur_state.column_sums ? scaled_width : 0;
++    }
++    return blur_state.allocated_size >= required_bytes && blur_state.sums_width >= scaled_width;
++}
++
++static void process_blur_rows(const unsigned char* src, unsigned char* dst, int width, int height, int radius, int weight_inverse) {
++    for (int y = 0; y < height; y++) {
++        const unsigned char* in_row = src + y * width * 4;
++        unsigned char* out_row = dst + y * width * 4;
++        int r_sum = 0, g_sum = 0, b_sum = 0;
++
++        for (int k = -radius; k <= radius; k++) {
++            int clamped_x = clamp_int(k, 0, width - 1);
++            const unsigned char* pixel = in_row + clamped_x * 4;
++            r_sum += pixel[0]; g_sum += pixel[1]; b_sum += pixel[2];
++        }
++
++        for (int x = 0; x < width; x++) {
++            out_row[0] = (r_sum * weight_inverse + 0x8000) >> 16;
++            out_row[1] = (g_sum * weight_inverse + 0x8000) >> 16;
++            out_row[2] = (b_sum * weight_inverse + 0x8000) >> 16;
++            out_row += 4;
++
++            int leading_x = clamp_int(x + radius + 1, 0, width - 1);
++            int trailing_x = clamp_int(x - radius, 0, width - 1);
++
++            const unsigned char* pixel_add = in_row + leading_x * 4;
++            const unsigned char* pixel_sub = in_row + trailing_x * 4;
++
++            r_sum += pixel_add[0] - pixel_sub[0];
++            g_sum += pixel_add[1] - pixel_sub[1];
++            b_sum += pixel_add[2] - pixel_sub[2];
++        }
++    }
++}
++
++static void process_blur_columns(const unsigned char* src, unsigned char* dst, BlurColorSum* col_sums, int width, int height, int radius, int weight_inverse) {
++    for (int x = 0; x < width; x++)
++        col_sums[x] = {0, 0, 0};
++
++    for (int k = -radius; k <= radius; k++) {
++        int clamped_y = clamp_int(k, 0, height - 1);
++        const unsigned char* pixel = src + clamped_y * width * 4;
++        for (int x = 0; x < width; x++, pixel += 4) {
++            col_sums[x].r += pixel[0];
++            col_sums[x].g += pixel[1];
++            col_sums[x].b += pixel[2];
++        }
++    }
++
++    for (int y = 0; y < height; y++) {
++        unsigned char* out_row = dst + y * width * 4;
++
++        int leading_y = clamp_int(y + radius + 1, 0, height - 1);
++        int trailing_y = clamp_int(y - radius, 0, height - 1);
++
++        const unsigned char* row_add = src + leading_y * width * 4;
++        const unsigned char* row_sub = src + trailing_y * width * 4;
++
++        for (int x = 0; x < width; x++, out_row += 4, row_add += 4, row_sub += 4) {
++            out_row[0] = (col_sums[x].r * weight_inverse + 0x8000) >> 16;
++            out_row[1] = (col_sums[x].g * weight_inverse + 0x8000) >> 16;
++            out_row[2] = (col_sums[x].b * weight_inverse + 0x8000) >> 16;
++
++            col_sums[x].r += row_add[0] - row_sub[0];
++            col_sums[x].g += row_add[1] - row_sub[1];
++            col_sums[x].b += row_add[2] - row_sub[2];
++        }
++    }
++}
++
++void gr_blur(int radius, int exclude_y) {
++    if (radius <= 0 || blur_state.applied_this_frame || !gr_draw || gr_draw->pixel_bytes != 4)
++        return;
++
++    int start_x = 0, start_y = 0;
++    int blur_w = gr_draw->width, blur_h = gr_draw->height;
++
++    // the excluded strip is at the top of the screen as the user sees it, so
++    // it ends up on a different edge of the framebuffer for each rotation
++    if (exclude_y < 0)
++        exclude_y = 0;
++    switch (gr_rotation) {
++        case 90:
++            blur_w -= exclude_y;
++            break;
++        case 180:
++            blur_h -= exclude_y;
++            break;
++        case 270:
++            start_x = exclude_y;
++            blur_w -= exclude_y;
++            break;
++        default:
++            start_y = exclude_y;
++            blur_h -= exclude_y;
++            break;
++    }
++
++    int downsampled_w = blur_w >> BLUR_DOWNSCALE_SHIFT;
++    int downsampled_h = blur_h >> BLUR_DOWNSCALE_SHIFT;
++
++    if (downsampled_w <= 0 || downsampled_h <= 0)
++        return;
++
++    if (!allocate_blur_buffers((size_t)downsampled_w * downsampled_h * 4, downsampled_w))
++        return;
++
++    int stride = gr_draw->row_bytes;
++
++    if (!blur_state.is_valid || blur_state.radius != radius ||
++        blur_state.x_offset != start_x || blur_state.y_offset != start_y ||
++        blur_state.width != blur_w || blur_state.height != blur_h) {
++
++        for (int sy = 0; sy < downsampled_h; sy++) {
++            const unsigned char* src = gr_draw->data + (start_y + (sy << BLUR_DOWNSCALE_SHIFT)) * stride + start_x * 4;
++            unsigned char* dst = blur_state.cache_buffer + sy * downsampled_w * 4;
++
++            for (int sx = 0; sx < downsampled_w; sx++, dst += 4) {
++                const unsigned char* pixel = src + (sx << BLUR_DOWNSCALE_SHIFT) * 4;
++                dst[0] = pixel[0];
++                dst[1] = pixel[1];
++                dst[2] = pixel[2];
++                dst[3] = 255;
++            }
++        }
++
++        int scaled_radius = std::max(1, radius >> BLUR_DOWNSCALE_SHIFT);
++        int weight_inverse = (1 << 16) / (2 * scaled_radius + 1);
++
++        for (int pass = 0; pass < 2; pass++) {
++            process_blur_rows(blur_state.cache_buffer, blur_state.tmp_buffer, downsampled_w, downsampled_h, scaled_radius, weight_inverse);
++            process_blur_columns(blur_state.tmp_buffer, blur_state.cache_buffer, blur_state.column_sums, downsampled_w, downsampled_h, scaled_radius, weight_inverse);
++        }
++
++        blur_state.radius = radius;
++        blur_state.x_offset = start_x;
++        blur_state.y_offset = start_y;
++        blur_state.width = blur_w;
++        blur_state.height = blur_h;
++        blur_state.is_valid = true;
++    }
++
++    for (int y = 0; y < blur_h; y++) {
++        int fraction_y = (y << (8 - BLUR_DOWNSCALE_SHIFT)) & 255;
++        int sy1 = clamp_int(y >> BLUR_DOWNSCALE_SHIFT, 0, downsampled_h - 1);
++        int sy2 = clamp_int(sy1 + 1, 0, downsampled_h - 1);
++
++        const unsigned char* row_top = blur_state.cache_buffer + sy1 * downsampled_w * 4;
++        const unsigned char* row_btm = blur_state.cache_buffer + sy2 * downsampled_w * 4;
++        unsigned char* out_pixel = gr_draw->data + (start_y + y) * stride + start_x * 4;
++
++        for (int x = 0; x < blur_w; x++, out_pixel += 4) {
++            int fraction_x = (x << (8 - BLUR_DOWNSCALE_SHIFT)) & 255;
++            int sx1 = clamp_int(x >> BLUR_DOWNSCALE_SHIFT, 0, downsampled_w - 1);
++            int sx2 = clamp_int(sx1 + 1, 0, downsampled_w - 1);
++
++            int w_top_left = ((256 - fraction_x) * (256 - fraction_y)) >> 8;
++            int w_top_right = (fraction_x * (256 - fraction_y)) >> 8;
++            int w_btm_left = ((256 - fraction_x) * fraction_y) >> 8;
++            int w_btm_right = (fraction_x * fraction_y) >> 8;
++
++            const unsigned char* top_left = row_top + sx1 * 4;
++            const unsigned char* top_right = row_top + sx2 * 4;
++            const unsigned char* btm_left = row_btm + sx1 * 4;
++            const unsigned char* btm_right = row_btm + sx2 * 4;
++
++            out_pixel[0] = (top_left[0] * w_top_left + top_right[0] * w_top_right + btm_left[0] * w_btm_left + btm_right[0] * w_btm_right) >> 8;
++            out_pixel[1] = (top_left[1] * w_top_left + top_right[1] * w_top_right + btm_left[1] * w_btm_left + btm_right[1] * w_btm_right) >> 8;
++            out_pixel[2] = (top_left[2] * w_top_left + top_right[2] * w_top_right + btm_left[2] * w_btm_left + btm_right[2] * w_btm_right) >> 8;
++        }
++    }
++
++    blur_state.applied_this_frame = true;
++}
++
+ void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy)
+ {
+     if (gr_context == NULL) {
+@@ -357,18 +581,36 @@
      ms->format = gr_draw->format;
  }
  
@@ -467,7 +741,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  #ifdef MSM_BSP
      gr_backend = open_overlay();
      if (gr_backend) {
-@@ -428,6 +446,10 @@
+@@ -428,6 +670,10 @@
  void gr_exit(void)
  {
      gr_backend->exit(gr_backend);
@@ -478,6 +752,19 @@ diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/r
  }
  
  int gr_fb_width(void)
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/include/minuitwrp/minui.h /bootable/recovery/minuitwrp/include/minuitwrp/minui.h
+--- /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-07-23 12:30:59.375351105 +0530
++++ /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-10-14 17:26:44.089745873 +0530
+@@ -48,6 +48,9 @@
+ void gr_clip(int x, int y, int w, int h);
+ void gr_noclip();
+ void gr_fill(int x, int y, int w, int h);
++void gr_blur(int radius, int exclude_y);
++void gr_blur_clear_cache(void);
++void gr_blur_new_frame(void);
+ void gr_line(int x0, int y0, int x1, int y1, int width);
+ gr_surface gr_render_circle(int radius, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-12-23 23:01:31.707604645 +0530
 +++ /bootable/recovery/openrecoveryscript.cpp	2026-03-28 11:55:23.708462443 +0530

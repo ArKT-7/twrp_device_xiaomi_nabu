@@ -236,6 +236,10 @@
 		<variable name="tw_cpu_pos_x" value="0"/>
 		<variable name="tw_battery_pos_x" value="0"/>
 		<variable name="show_cluttered_Wbar" value="0"/>
+		<variable name="arkt_status_separator_y" value="64"/>
+		<variable name="arkt_blur_val" value="69" persist="1"/>
+		<variable name="arkt_blur_exclude_status" value="1" persist="1"/>
+		<variable name="arkt_tint_exclude_status" value="0" persist="1"/>
 	</variables>
 
 	<mousecursor>

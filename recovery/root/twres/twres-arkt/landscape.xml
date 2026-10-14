@@ -3570,6 +3570,25 @@
 				</actions>
 			</slidervalue>
 
+			<slidervalue>
+				<placement x="col1_x_left" y="%row15_y%" w="%content_width%"/>
+				<text>Background Blur: %arkt_blur_val%%</text>
+				<data variable="arkt_blur_val" min="0" max="100"/>
+			</slidervalue>
+
+			<checkbox>
+				<placement x="%col1_x_left%" y="%row13_y%"/>
+				<text>Exclude Blur from Status Bar</text>
+				<data variable="arkt_blur_exclude_status"/>
+			</checkbox>
+
+			<checkbox>
+				<placement x="%col1_x_left%" y="%row14a_y%"/>
+				<text>Exclude Dark Tint from Status Bar</text>
+				<condition var1="arkt_blur_exclude_status" var2="1"/>
+				<data variable="arkt_tint_exclude_status"/>
+			</checkbox>
+
 			<action>
 				<touch key="home"/>
 				<action function="page">main</action>
@@ -5847,9 +5866,7 @@
 		</page>
 
 		<page name="select_storage">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
 			<fill color="%background_color%">
 				<placement x="%col2_x_left%" y="row4_y" w="%dialog_width%" h="%dialog_height%"/>
@@ -6132,7 +6149,7 @@
 		</page>
 
 		<page name="part_not_found">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
@@ -6325,7 +6342,7 @@
 		</page>
 
 		<page name="winformat_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text style="text_m_fail">
 				<placement x="%center_x%" y="144" placement="5"/>
@@ -6662,7 +6679,7 @@
 		</page>
 
 		<page name="restore_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text style="text_m_fail">
 				<placement x="%center_x%" y="%row1_y%" placement="5"/>
@@ -6879,7 +6896,7 @@
 		</page>
 
 		<page name="msc_enabled">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
@@ -7092,7 +7109,7 @@
 		</page>
 
 		<page name="msc_enabled_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
@@ -7295,7 +7312,7 @@
 		</page>
 
 		<page name="rotation_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="keylabel" color="#FFC107"/>
@@ -7317,7 +7334,7 @@
 		</page>
 
 		<page name="partition_ask">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text style="text_m_fail">
 				<placement x="%center_x%" y="144" placement="5"/>
@@ -7540,7 +7557,7 @@
 		</page>
 
 		<page name="partition_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
@@ -7734,7 +7751,7 @@
 		</page>
 
 		<page name="partition_confirm">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
@@ -7944,9 +7961,7 @@
 		</page>
 
 		<page name="select_language">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
 			<fill color="%background_color%">
 				<placement x="%col2_x_left%" y="row4_y" w="%dialog_width%" h="%dialog_height%"/>
