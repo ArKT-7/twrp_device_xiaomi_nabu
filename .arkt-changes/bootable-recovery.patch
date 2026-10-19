@@ -1,6 +1,15 @@
 diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.cpp
---- /bootable/recovery/data.cpp	2025-12-23 23:01:31.666380679 +0530
-+++ /bootable/recovery/data.cpp	2026-05-09 04:02:24.808630581 +0530
+--- /bootable/recovery/data.cpp	2026-10-19 08:03:38.677308384 +0530
++++ /bootable/recovery/data.cpp	2026-10-18 20:46:24.736881661 +0530
+@@ -764,7 +764,7 @@
+ 	mPersist.SetValue(TW_SDPART_FILE_SYSTEM, "ext3");
+ 	mPersist.SetValue(TW_TIME_ZONE_GUISEL, "CST6;CDT,M3.2.0,M11.1.0");
+ 	mPersist.SetValue(TW_TIME_ZONE_GUIOFFSET, "0");
+-	mPersist.SetValue(TW_TIME_ZONE_GUIDST, "1");
++	mPersist.SetValue(TW_TIME_ZONE_GUIDST, "0");
+ 	mPersist.SetValue(TW_AUTO_REFLASHTWRP_VAR, "0");
+ #ifdef TW_NO_FLASH_CURRENT_TWRP
+ 	mConst.SetValue("tw_no_flash_current_twrp", "1");
 @@ -819,7 +819,7 @@
  	mConst.SetValue("tw_screen_timeout_secs", "0");
  	mConst.SetValue("tw_no_screen_timeout", "1");
@@ -10,9 +19,18 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  	mPersist.SetValue("tw_no_screen_timeout", "0");
  #endif
  #ifdef BOARD_BOOT_HEADER_VERSION
+@@ -1143,7 +1143,7 @@
+ 
+ string DataManager::GetSettingsStoragePath(void)
+ {
+-	return GetStrValue("tw_settings_path");
++	return "/metadata/TWRP/";
+ }
+ 
+ void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
---- /bootable/recovery/gui/action.cpp	2025-12-23 23:01:31.673835823 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-05-09 04:32:25.532318597 +0530
+--- /bootable/recovery/gui/action.cpp	2026-10-19 08:03:38.677557047 +0530
++++ /bootable/recovery/gui/action.cpp	2026-10-19 07:30:45.785130009 +0530
 @@ -210,6 +210,8 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
@@ -22,7 +40,27 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -1074,6 +1076,265 @@
+@@ -557,6 +559,7 @@
+ 
+ int GUIAction::reboot(std::string arg)
+ {
++	DataManager::Flush();
+ 	sync();
+ 	DataManager::SetValue("tw_gui_done", 1);
+ 	DataManager::SetValue("tw_reboot_arg", arg);
+@@ -672,8 +675,11 @@
+ 		gui_msg("simulating=Simulating actions...");
+ 	else {
+ 		DataManager::ResetDefaults();
++		DataManager::Flush();
++		sync();
+ 		PartitionManager.Update_System_Details();
+ 		PartitionManager.Mount_Current_Storage(true);
++		PageManager::RequestReload();
+ 	}
+ 	operation_end(0);
+ 	return 0;
+@@ -1074,6 +1080,265 @@
  	int i, ret_val = 0, wipe_cache = 0;
  	// We're going to jump to this page first, like a loading page
  	gui_changePage(arg);
@@ -288,25 +326,31 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	for (i=0; i<zip_queue_index; i++) {
  		string zip_path = zip_queue[i];
  		size_t slashpos = zip_path.find_last_of('/');
-@@ -2373,3 +2634,80 @@
+@@ -1933,8 +2198,12 @@
+ 	int op_status = 0;
+ 
+ 	operation_start("Set Language");
+-	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
++	string lang = DataManager::GetStrValue("tw_language");
++	DataManager::SetValue("tw_language", lang, 1); 
++	PageManager::LoadLanguage(lang);
+ 	PageManager::RequestReload();
++	DataManager::Flush();
++	sync();
+ 	op_status = 0; // success
+ 
+ 	operation_end(op_status);
+@@ -2373,3 +2642,70 @@
  	operation_end(op_status);
  	return 0;
  }
 +
 +// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
 +
-+// Show rotation warning UI, perform rotation logic
 +int GUIAction::rotationbyarkt(std::string arg __unused)
 +{
-+	gui_changeOverlay("rotation_warn");
-+	// Run restore steps asynchronously to avoid blocking UI
-+    std::thread([] {
-+		sync();
-+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-+    	TWFunc::RotationByArkt();
-+    }).detach();
-+
-+    sync();
++    gui_changeOverlay("rotation_warn");
++    TWFunc::RotationByArKT();
 +    return 0;
 +}
 +
@@ -344,8 +388,6 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +            target_partition = "/super;";
 +        } else if (lower_name.find("persist") != std::string::npos) {
 +            target_partition = "/persist;";
-+        } else {
-+            target_partition = "";
 +        }
 +
 +        DataManager::SetValue("tw_flash_partition", target_partition);
@@ -370,10 +412,57 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    return 0;
 +}
 \ No newline at end of file
+diff -ruN '--exclude=.git' /bootable/recovery/gui/fill.cpp /bootable/recovery/gui/fill.cpp
+--- /bootable/recovery/gui/fill.cpp	2026-07-23 12:30:59.336490674 +0530
++++ /bootable/recovery/gui/fill.cpp	2026-10-18 20:46:24.738080580 +0530
+@@ -32,6 +32,7 @@
+ #include <time.h>
+ #include <unistd.h>
+ #include <stdlib.h>
++#include "../data.hpp"
+ 
+ #include <string>
+ 
+@@ -45,6 +46,7 @@
+ 
+ GUIFill::GUIFill(xml_node<>* node) : GUIObject(node)
+ {
++	mRadius = 0;
+ 	bool has_color = false;
+ 	mColor = LoadAttrColor(node, "color", &has_color);
+ 	if (!has_color) {
+@@ -52,6 +54,8 @@
+ 		return;
+ 	}
+ 
++	mRadius = LoadAttrIntScaleX(node, "radius", 0);
++
+ 	// Load the placement
+ 	LoadPlacement(FindNode(node, "placement"), &mRenderX, &mRenderY, &mRenderW, &mRenderH);
+ 
+@@ -63,8 +67,9 @@
+ 	if (!isConditionTrue())
+ 		return 0;
+ 
++	int radius = DataManager::GetIntValue("arkt_rounded_corners") ? mRadius : 0;
+ 	gr_color(mColor.red, mColor.green, mColor.blue, mColor.alpha);
+-	gr_fill(mRenderX, mRenderY, mRenderW, mRenderH);
++	gr_fill_round(mRenderX, mRenderY, mRenderW, mRenderH, radius);
+ 	return 0;
+ }
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
---- /bootable/recovery/gui/objects.hpp	2025-12-23 23:01:31.674480566 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-05-09 04:02:24.811341731 +0530
-@@ -335,6 +335,8 @@
+--- /bootable/recovery/gui/objects.hpp	2026-10-19 08:03:38.677666693 +0530
++++ /bootable/recovery/gui/objects.hpp	2026-10-19 07:32:42.490477496 +0530
+@@ -256,6 +256,7 @@
+ 
+ protected:
+ 	COLOR mColor;
++	int mRadius;
+ };
+ 
+ // GUIAction - Used for standard actions
+@@ -335,6 +336,8 @@
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
  	int removedynamicgroups(std:: string arg);
@@ -382,6 +471,513 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
+diff -ruN '--exclude=.git' /bootable/recovery/gui/pages.cpp /bootable/recovery/gui/pages.cpp
+--- /bootable/recovery/gui/pages.cpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/pages.cpp	2026-10-18 20:46:24.738649131 +0530
+@@ -522,9 +522,20 @@
+ 
+ int Page::Render(void)
+ {
++	bool requires_blur = (mBackground.alpha > 0 && mBackground.alpha < 255);
++	int separator_height = DataManager::GetIntValue("arkt_status_separator_y");
++	int blur_start_y = DataManager::GetIntValue("arkt_blur_exclude_status") ? separator_height : 0;
++	int fill_start_y = (requires_blur && blur_start_y && DataManager::GetIntValue("arkt_tint_exclude_status")) ? separator_height : 0;
++	int blur_radius = DataManager::GetIntValue("arkt_blur_val") * 67 / 100;
++
++	if (requires_blur && blur_radius > 0)
++		gr_blur(blur_radius, blur_start_y);
++
+ 	// Render background
+-	gr_color(mBackground.red, mBackground.green, mBackground.blue, mBackground.alpha);
+-	gr_fill(0, 0, gr_fb_width(), gr_fb_height());
++	if (mBackground.alpha > 0) {
++		gr_color(mBackground.red, mBackground.green, mBackground.blue, mBackground.alpha);
++		gr_fill(0, fill_start_y, gr_fb_width(), gr_fb_height() - fill_start_y);
++	}
+ 
+ 	// Render remaining objects
+ 	std::vector<RenderObject*>::iterator iter;
+@@ -644,6 +655,8 @@
+ 
+ void Page::SetPageFocus(int inFocus)
+ {
++	gr_blur_clear_cache();
++
+ 	// Render remaining objects
+ 	std::vector<RenderObject*>::iterator iter;
+ 	for (iter = mRenders.begin(); iter != mRenders.end(); iter++)
+@@ -1106,6 +1119,7 @@
+ {
+ 	int ret;
+ 
++	gr_blur_new_frame();
+ 	ret = (mCurrentPage ? mCurrentPage->Render() : -1);
+ 	if (ret < 0)
+ 		return ret;
+diff -ruN '--exclude=.git' /bootable/recovery/gui/scrolllist.cpp /bootable/recovery/gui/scrolllist.cpp
+--- /bootable/recovery/gui/scrolllist.cpp	2026-07-23 12:30:59.337074766 +0530
++++ /bootable/recovery/gui/scrolllist.cpp	2026-10-18 20:46:24.738918818 +0530
+@@ -303,8 +303,9 @@
+ 		gr_fill(centerX - mFastScrollLineW / 2, y + boxH, mFastScrollLineW, fHeight - boxY - boxH);
+ 
+ 		// box
++		int radius = DataManager::GetIntValue("arkt_rounded_corners") ? (boxW / 2) : 0;
+ 		gr_color(mFastScrollRectColor.red, mFastScrollRectColor.green, mFastScrollRectColor.blue, mFastScrollRectColor.alpha);
+-		gr_fill(x, y, boxW, boxH);
++		gr_fill_round(x, y, boxW, boxH, radius);
+ 
+ 		mFastScrollRectCurrentY = boxY;
+ 		mFastScrollRectCurrentH = boxH;
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/events.cpp /bootable/recovery/minuitwrp/events.cpp
+--- /bootable/recovery/minuitwrp/events.cpp	2026-07-23 12:30:59.374978875 +0530
++++ /bootable/recovery/minuitwrp/events.cpp	2026-10-18 20:46:24.739263424 +0530
+@@ -27,6 +27,8 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <fstream>
++#include <cutils/properties.h>
++extern unsigned int gr_rotation; 
+ #ifdef USE_QTI_AIDL_HAPTICS_FIX_OFF
+ #include <thread>
+ #endif
+@@ -448,13 +450,21 @@
+     printf("EV: p->x=%d  x-range=%d,%d  fb-width=%d\n", p->x, p->xi.minimum, p->xi.maximum, gr_fb_width());
+ #endif
+ 
++    int fb_width, fb_height;
++    if (gr_rotation == 90 || gr_rotation == 270) {
++        fb_width = gr_fb_height();
++        fb_height = gr_fb_width();
++    }
+ #ifndef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    int fb_width = gr_fb_width();
+-    int fb_height = gr_fb_height();
++    else {
++        fb_width = gr_fb_width();
++        fb_height = gr_fb_height();
++    }
+ #else
+-    // We need to swap the scaling sizes, too
+-    int fb_width = gr_fb_height();
+-    int fb_height = gr_fb_width();
++    else {
++        fb_width = gr_fb_height();
++        fb_height = gr_fb_width();
++    }
+ #endif
+ 
+     *x = (p->x - p->xi.minimum) * (fb_width - 1) / (p->xi.maximum - p->xi.minimum);
+@@ -734,11 +744,29 @@
+         return 1;
+     }
+ 
++    int temp_x = x; 
++    switch (gr_rotation) {
++        case 90:
++            x = y;
++            y = gr_fb_height() - temp_x;
++            break;
++        case 180:
++            x = gr_fb_width() - x;
++            y = gr_fb_height() - y;
++            break;
++        case 270:
++            x = gr_fb_width() - y;
++            y = temp_x;
++            break;
++        case 0:
++        default:
+ #ifdef RECOVERY_TOUCHSCREEN_SWAP_XY
+-    x ^= y;
+-    y ^= x;
+-    x ^= y;
++            x ^= y;
++            y ^= x;
++            x ^= y;
+ #endif
++            break;
++    }
+ #ifdef RECOVERY_TOUCHSCREEN_FLIP_X
+     x = gr_fb_width() - x;
+ #endif
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/graphics.cpp /bootable/recovery/minuitwrp/graphics.cpp
+--- /bootable/recovery/minuitwrp/graphics.cpp	2026-07-23 12:30:59.374978875 +0530
++++ /bootable/recovery/minuitwrp/graphics.cpp	2026-10-18 20:46:24.739565399 +0530
+@@ -30,6 +30,7 @@
+ #include <linux/kd.h>
+ 
+ #include <time.h>
++#include <math.h>
+ 
+ #include <cutils/properties.h>
+ #include <pixelflinger/pixelflinger.h>
+@@ -246,26 +247,291 @@
+ void gr_fill(int x, int y, int w, int h)
+ {
+     GGLContext *gl = gr_context;
+-    int x0_disp, y0_disp, x1_disp, y1_disp;
+     int l_disp, r_disp, t_disp, b_disp;
+ 
+     if(gr_is_curr_clr_opaque)
+         gl->disable(gl, GGL_BLEND);
+ 
+-    x0_disp = ROTATION_X_DISP(x, y, gr_draw->width);
+-    y0_disp = ROTATION_Y_DISP(x, y, gr_draw->height);
+-    x1_disp = ROTATION_X_DISP(x + w, y + h, gr_draw->width);
+-    y1_disp = ROTATION_Y_DISP(x + w, y + h, gr_draw->height);
+-    l_disp = std::min(x0_disp, x1_disp);
+-    r_disp = std::max(x0_disp, x1_disp);
+-    t_disp = std::min(y0_disp, y1_disp);
+-    b_disp = std::max(y0_disp, y1_disp);
++    // ROTATION_X_DISP/Y_DISP map single pixels, so feednig them the far corner
++    // of a rectangle lands one pixel short when the screen is rotated and the
++    // last row or column never gets painted, Map the whole rectnagle instead, the same way gr_clip() does
++    switch (gr_rotation) {
++        case 90:
++            l_disp = gr_draw->width - y - h;
++            t_disp = x;
++            r_disp = gr_draw->width - y;
++            b_disp = x + w;
++            break;
++        case 180:
++            l_disp = gr_draw->width - x - w;
++            t_disp = gr_draw->height - y - h;
++            r_disp = gr_draw->width - x;
++            b_disp = gr_draw->height - y;
++            break;
++        case 270:
++            l_disp = y;
++            t_disp = gr_draw->height - x - w;
++            r_disp = y + h;
++            b_disp = gr_draw->height - x;
++            break;
++        default:
++            l_disp = x;
++            t_disp = y;
++            r_disp = x + w;
++            b_disp = y + h;
++            break;
++    }
+     gl->recti(gl, l_disp, t_disp, r_disp, b_disp);
+ 
+     if(gr_is_curr_clr_opaque)
+         gl->enable(gl, GGL_BLEND);
+ }
+ 
++// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
++
++void gr_fill_round(int x, int y, int w, int h, int r)
++{
++    r = std::min(r, std::min(w, h) / 2);
++    if (r <= 0) {
++        gr_fill(x, y, w, h);
++        return;
++    }
++
++    // square middle part first, then the four corners one row at a time
++    if (h > 2 * r) {
++        gr_fill(x, y + r, w, h - 2 * r);
++    }
++
++    for (int row = 0; row < r; row++) {
++        // how far the middlle of this row is from the centre of the corner circle
++        float dy = r - row - 0.5f;
++        int inset = r - (int)(sqrtf(r * r - dy * dy) + 0.5f);
++
++        gr_fill(x + inset, y + row, w - 2 * inset, 1);
++        gr_fill(x + inset, y + h - 1 - row, w - 2 * inset, 1);
++    }
++}
++
++// Background blur for translucent pages (overloays basically) the page behind is shrunk,
++// blurred with two box blur passes (close enough to a gaussian) and scaled back
++// up, the blurred copy is kept while the overlay is open, so the page behind it is only blured once
++#define BLUR_DOWNSCALE_SHIFT 1
++
++struct BlurColorSum { int r, g, b; };
++
++static inline int clamp_int(int value, int low, int high) {
++    return value < low ? low : (value > high ? high : value);
++}
++
++static struct {
++    unsigned char* cache_buffer;
++    unsigned char* tmp_buffer;
++    size_t allocated_size;
++    BlurColorSum* column_sums;
++    int sums_width;
++    int radius, x_offset, y_offset, width, height;
++    bool is_valid;
++    bool applied_this_frame;
++} blur_state;
++
++void gr_blur_clear_cache(void) {
++    blur_state.is_valid = false;
++}
++
++// called at the start of every render pass, so stacked overlays blur only once
++void gr_blur_new_frame(void) {
++    blur_state.applied_this_frame = false;
++}
++
++static bool allocate_blur_buffers(size_t required_bytes, int scaled_width) {
++    if (blur_state.allocated_size < required_bytes) {
++        free(blur_state.cache_buffer);
++        free(blur_state.tmp_buffer);
++        blur_state.cache_buffer = (unsigned char*)malloc(required_bytes);
++        blur_state.tmp_buffer = (unsigned char*)malloc(required_bytes);
++        blur_state.allocated_size = (blur_state.cache_buffer && blur_state.tmp_buffer) ? required_bytes : 0;
++        blur_state.is_valid = false;
++    }
++
++    if (blur_state.sums_width < scaled_width) {
++        free(blur_state.column_sums);
++        blur_state.column_sums = (BlurColorSum*)malloc(scaled_width * sizeof(BlurColorSum));
++        blur_state.sums_width = blur_state.column_sums ? scaled_width : 0;
++    }
++    return blur_state.allocated_size >= required_bytes && blur_state.sums_width >= scaled_width;
++}
++
++static void process_blur_rows(const unsigned char* src, unsigned char* dst, int width, int height, int radius, int weight_inverse) {
++    for (int y = 0; y < height; y++) {
++        const unsigned char* in_row = src + y * width * 4;
++        unsigned char* out_row = dst + y * width * 4;
++        int r_sum = 0, g_sum = 0, b_sum = 0;
++
++        for (int k = -radius; k <= radius; k++) {
++            int clamped_x = clamp_int(k, 0, width - 1);
++            const unsigned char* pixel = in_row + clamped_x * 4;
++            r_sum += pixel[0]; g_sum += pixel[1]; b_sum += pixel[2];
++        }
++
++        for (int x = 0; x < width; x++) {
++            out_row[0] = (r_sum * weight_inverse + 0x8000) >> 16;
++            out_row[1] = (g_sum * weight_inverse + 0x8000) >> 16;
++            out_row[2] = (b_sum * weight_inverse + 0x8000) >> 16;
++            out_row += 4;
++
++            int leading_x = clamp_int(x + radius + 1, 0, width - 1);
++            int trailing_x = clamp_int(x - radius, 0, width - 1);
++
++            const unsigned char* pixel_add = in_row + leading_x * 4;
++            const unsigned char* pixel_sub = in_row + trailing_x * 4;
++
++            r_sum += pixel_add[0] - pixel_sub[0];
++            g_sum += pixel_add[1] - pixel_sub[1];
++            b_sum += pixel_add[2] - pixel_sub[2];
++        }
++    }
++}
++
++static void process_blur_columns(const unsigned char* src, unsigned char* dst, BlurColorSum* col_sums, int width, int height, int radius, int weight_inverse) {
++    for (int x = 0; x < width; x++)
++        col_sums[x] = {0, 0, 0};
++
++    for (int k = -radius; k <= radius; k++) {
++        int clamped_y = clamp_int(k, 0, height - 1);
++        const unsigned char* pixel = src + clamped_y * width * 4;
++        for (int x = 0; x < width; x++, pixel += 4) {
++            col_sums[x].r += pixel[0];
++            col_sums[x].g += pixel[1];
++            col_sums[x].b += pixel[2];
++        }
++    }
++
++    for (int y = 0; y < height; y++) {
++        unsigned char* out_row = dst + y * width * 4;
++
++        int leading_y = clamp_int(y + radius + 1, 0, height - 1);
++        int trailing_y = clamp_int(y - radius, 0, height - 1);
++
++        const unsigned char* row_add = src + leading_y * width * 4;
++        const unsigned char* row_sub = src + trailing_y * width * 4;
++
++        for (int x = 0; x < width; x++, out_row += 4, row_add += 4, row_sub += 4) {
++            out_row[0] = (col_sums[x].r * weight_inverse + 0x8000) >> 16;
++            out_row[1] = (col_sums[x].g * weight_inverse + 0x8000) >> 16;
++            out_row[2] = (col_sums[x].b * weight_inverse + 0x8000) >> 16;
++
++            col_sums[x].r += row_add[0] - row_sub[0];
++            col_sums[x].g += row_add[1] - row_sub[1];
++            col_sums[x].b += row_add[2] - row_sub[2];
++        }
++    }
++}
++
++void gr_blur(int radius, int exclude_y) {
++    if (radius <= 0 || blur_state.applied_this_frame || !gr_draw || gr_draw->pixel_bytes != 4)
++        return;
++
++    int start_x = 0, start_y = 0;
++    int blur_w = gr_draw->width, blur_h = gr_draw->height;
++
++    // the excluded strip is at the top of the screen as the user sees it, so
++    // it ends up on a different edge of the framebuffer for each rotation
++    if (exclude_y < 0)
++        exclude_y = 0;
++    switch (gr_rotation) {
++        case 90:
++            blur_w -= exclude_y;
++            break;
++        case 180:
++            blur_h -= exclude_y;
++            break;
++        case 270:
++            start_x = exclude_y;
++            blur_w -= exclude_y;
++            break;
++        default:
++            start_y = exclude_y;
++            blur_h -= exclude_y;
++            break;
++    }
++
++    int downsampled_w = blur_w >> BLUR_DOWNSCALE_SHIFT;
++    int downsampled_h = blur_h >> BLUR_DOWNSCALE_SHIFT;
++
++    if (downsampled_w <= 0 || downsampled_h <= 0)
++        return;
++
++    if (!allocate_blur_buffers((size_t)downsampled_w * downsampled_h * 4, downsampled_w))
++        return;
++
++    int stride = gr_draw->row_bytes;
++
++    if (!blur_state.is_valid || blur_state.radius != radius ||
++        blur_state.x_offset != start_x || blur_state.y_offset != start_y ||
++        blur_state.width != blur_w || blur_state.height != blur_h) {
++
++        for (int sy = 0; sy < downsampled_h; sy++) {
++            const unsigned char* src = gr_draw->data + (start_y + (sy << BLUR_DOWNSCALE_SHIFT)) * stride + start_x * 4;
++            unsigned char* dst = blur_state.cache_buffer + sy * downsampled_w * 4;
++
++            for (int sx = 0; sx < downsampled_w; sx++, dst += 4) {
++                const unsigned char* pixel = src + (sx << BLUR_DOWNSCALE_SHIFT) * 4;
++                dst[0] = pixel[0];
++                dst[1] = pixel[1];
++                dst[2] = pixel[2];
++                dst[3] = 255;
++            }
++        }
++
++        int scaled_radius = std::max(1, radius >> BLUR_DOWNSCALE_SHIFT);
++        int weight_inverse = (1 << 16) / (2 * scaled_radius + 1);
++
++        for (int pass = 0; pass < 2; pass++) {
++            process_blur_rows(blur_state.cache_buffer, blur_state.tmp_buffer, downsampled_w, downsampled_h, scaled_radius, weight_inverse);
++            process_blur_columns(blur_state.tmp_buffer, blur_state.cache_buffer, blur_state.column_sums, downsampled_w, downsampled_h, scaled_radius, weight_inverse);
++        }
++
++        blur_state.radius = radius;
++        blur_state.x_offset = start_x;
++        blur_state.y_offset = start_y;
++        blur_state.width = blur_w;
++        blur_state.height = blur_h;
++        blur_state.is_valid = true;
++    }
++
++    for (int y = 0; y < blur_h; y++) {
++        int fraction_y = (y << (8 - BLUR_DOWNSCALE_SHIFT)) & 255;
++        int sy1 = clamp_int(y >> BLUR_DOWNSCALE_SHIFT, 0, downsampled_h - 1);
++        int sy2 = clamp_int(sy1 + 1, 0, downsampled_h - 1);
++
++        const unsigned char* row_top = blur_state.cache_buffer + sy1 * downsampled_w * 4;
++        const unsigned char* row_btm = blur_state.cache_buffer + sy2 * downsampled_w * 4;
++        unsigned char* out_pixel = gr_draw->data + (start_y + y) * stride + start_x * 4;
++
++        for (int x = 0; x < blur_w; x++, out_pixel += 4) {
++            int fraction_x = (x << (8 - BLUR_DOWNSCALE_SHIFT)) & 255;
++            int sx1 = clamp_int(x >> BLUR_DOWNSCALE_SHIFT, 0, downsampled_w - 1);
++            int sx2 = clamp_int(sx1 + 1, 0, downsampled_w - 1);
++
++            int w_top_left = ((256 - fraction_x) * (256 - fraction_y)) >> 8;
++            int w_top_right = (fraction_x * (256 - fraction_y)) >> 8;
++            int w_btm_left = ((256 - fraction_x) * fraction_y) >> 8;
++            int w_btm_right = (fraction_x * fraction_y) >> 8;
++
++            const unsigned char* top_left = row_top + sx1 * 4;
++            const unsigned char* top_right = row_top + sx2 * 4;
++            const unsigned char* btm_left = row_btm + sx1 * 4;
++            const unsigned char* btm_right = row_btm + sx2 * 4;
++
++            out_pixel[0] = (top_left[0] * w_top_left + top_right[0] * w_top_right + btm_left[0] * w_btm_left + btm_right[0] * w_btm_right) >> 8;
++            out_pixel[1] = (top_left[1] * w_top_left + top_right[1] * w_top_right + btm_left[1] * w_btm_left + btm_right[1] * w_btm_right) >> 8;
++            out_pixel[2] = (top_left[2] * w_top_left + top_right[2] * w_top_right + btm_left[2] * w_btm_left + btm_right[2] * w_btm_right) >> 8;
++        }
++    }
++
++    blur_state.applied_this_frame = true;
++}
++
+ void gr_blit(gr_surface source, int sx, int sy, int w, int h, int dx, int dy)
+ {
+     if (gr_context == NULL) {
+@@ -357,18 +623,36 @@
+     ms->format = gr_draw->format;
+ }
+ 
+-int gr_init(void)
++// Function By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
++void gr_reload_rotation(void)
+ {
+-    gr_draw = NULL;
+-
+     char gr_rotation_string[PROPERTY_VALUE_MAX];
+     char default_rotation[4];
+     snprintf(default_rotation, 4, "%d", TW_ROTATION);
+-    property_get("persist.twrp.rotation", gr_rotation_string, default_rotation);
++
++    FILE *rf = fopen("/metadata/TWRP/rotation_state", "r");
++    if (!rf) {
++        rf = fopen("/twres/twres-arkt/rotation_state", "r");
++    }
++    
++    if (rf) {
++        if (!fgets(gr_rotation_string, sizeof(gr_rotation_string), rf))
++            strcpy(gr_rotation_string, default_rotation);
++        fclose(rf);
++    } else {
++        property_get("persist.twrp.rotation", gr_rotation_string, default_rotation);
++    }
+     gr_rotation = atoi(gr_rotation_string);
+     if (!(gr_rotation == 90 || gr_rotation == 180 || gr_rotation == 270))
+         gr_rotation = 0;
+ 
++    property_set("persist.twrp.rotation", gr_rotation_string);
++}
++
++int gr_init(void)
++{
++    gr_draw = NULL;
++    gr_reload_rotation();
+ #ifdef MSM_BSP
+     gr_backend = open_overlay();
+     if (gr_backend) {
+@@ -428,6 +712,10 @@
+ void gr_exit(void)
+ {
+     gr_backend->exit(gr_backend);
++    if (gr_context) {
++        gglUninit(gr_context);
++        gr_context = NULL;
++    }
+ }
+ 
+ int gr_fb_width(void)
+diff -ruN '--exclude=.git' /bootable/recovery/minuitwrp/include/minuitwrp/minui.h /bootable/recovery/minuitwrp/include/minuitwrp/minui.h
+--- /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-07-23 12:30:59.375351105 +0530
++++ /bootable/recovery/minuitwrp/include/minuitwrp/minui.h	2026-10-18 20:46:24.739768152 +0530
+@@ -48,6 +48,10 @@
+ void gr_clip(int x, int y, int w, int h);
+ void gr_noclip();
+ void gr_fill(int x, int y, int w, int h);
++void gr_fill_round(int x, int y, int w, int h, int r);
++void gr_blur(int radius, int exclude_y);
++void gr_blur_clear_cache(void);
++void gr_blur_new_frame(void);
+ void gr_line(int x0, int y0, int x1, int y1, int width);
+ gr_surface gr_render_circle(int radius, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/recovery/openrecoveryscript.cpp
 --- /bootable/recovery/openrecoveryscript.cpp	2025-12-23 23:01:31.707604645 +0530
 +++ /bootable/recovery/openrecoveryscript.cpp	2026-05-09 04:02:24.812134184 +0530
@@ -441,9 +1037,28 @@ diff -ruN '--exclude=.git' /bootable/recovery/openrecoveryscript.cpp /bootable/r
  }
  
  int OpenRecoveryScript::copy_script_file(string filename) {
+diff -ruN '--exclude=.git' /bootable/recovery/partitionmanager.cpp /bootable/recovery/partitionmanager.cpp
+--- /bootable/recovery/partitionmanager.cpp	2026-07-23 12:30:59.379261634 +0530
++++ /bootable/recovery/partitionmanager.cpp	2026-10-18 20:46:24.740398140 +0530
+@@ -2380,8 +2380,13 @@
+ 	std::vector<TWPartition*>::iterator iter;
+ 
+ 	for (iter = Partitions.begin(); iter != Partitions.end(); iter++) {
+-		if ((*iter)->Is_Storage)
+-			(*iter)->Mount(false);
++		if ((*iter)->Is_Storage) {
++            if ((*iter)->Is_Present) {
++                (*iter)->Mount(false);
++            } else {
++                LOGINFO("Skipping mount, partition '%s' is not present.\n", (*iter)->Mount_Point.c_str());
++            }
++	 	}
+ 	}
+ }
+ 
 diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/recovery/prebuilt/Android.mk
---- /bootable/recovery/prebuilt/Android.mk	2025-12-23 23:01:31.708567270 +0530
-+++ /bootable/recovery/prebuilt/Android.mk	2026-05-09 04:02:24.812717114 +0530
+--- /bootable/recovery/prebuilt/Android.mk	2026-10-19 08:03:38.678014907 +0530
++++ /bootable/recovery/prebuilt/Android.mk	2026-10-18 20:46:24.741106381 +0530
 @@ -221,11 +221,11 @@
          RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/keystore2
          RECOVERY_BINARY_SOURCE_FILES += $(TARGET_OUT_EXECUTABLES)/keystore_cli
@@ -475,8 +1090,8 @@ diff -ruN '--exclude=.git' /bootable/recovery/prebuilt/Android.mk /bootable/reco
  ifeq ($(AB_OTA_UPDATER), true)
      RECOVERY_BINARY_SOURCE_FILES += $(TARGET_RECOVERY_ROOT_OUT)/system/bin/update_engine_sideload
 diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.cpp
---- /bootable/recovery/twrp.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp.cpp	2026-05-09 04:02:24.813112183 +0530
+--- /bootable/recovery/twrp.cpp	2026-10-19 08:03:38.678639401 +0530
++++ /bootable/recovery/twrp.cpp	2026-10-19 07:25:42.312734145 +0530
 @@ -225,6 +225,15 @@
  #ifdef TW_INCLUDE_CRYPTO
  	android::keystore::copySqliteDb();
@@ -493,7 +1108,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	Decrypt_Page(skip_decryption, datamedia);
  
  	// Check for and load custom theme if present
-@@ -475,6 +484,8 @@
+@@ -398,6 +407,8 @@
+ 		return -1;
+ 	}
+ 
++	TWFunc::PersistRotationByArKT();
++
+ #ifdef TW_LOAD_VENDOR_MODULES
+ 	if (startup.Get_Fastboot_Mode()) {
+ 		TWPartition* ven_dlkm = PartitionManager.Find_Partition_By_Path("/vendor_dlkm");
+@@ -475,6 +486,8 @@
  	// Create a thread for battery monitoring
  	static std::thread battery_monitor(monitorBatteryInBackground);
  
@@ -502,7 +1126,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	twrpAdbBuFifo *adb_bu_fifo = new twrpAdbBuFifo();
  	TWFunc::Clear_Bootloader_Message();
  
-@@ -491,7 +502,7 @@
+@@ -491,7 +504,7 @@
  	PageManager::LoadLanguage(DataManager::GetStrValue("tw_language"));
  	GUIConsole::Translate_Now();
  
@@ -512,108 +1136,138 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
  	// Launch the main GUI
  	gui_start();
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
---- /bootable/recovery/twrp-functions.cpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.cpp	2026-05-09 04:02:24.813905029 +0530
-@@ -1659,4 +1659,91 @@
+--- /bootable/recovery/twrp-functions.cpp	2026-10-19 08:03:38.678351711 +0530
++++ /bootable/recovery/twrp-functions.cpp	2026-10-19 07:52:35.620336359 +0530
+@@ -59,6 +59,7 @@
+ #include <sys/reboot.h>
+ #include "gui/rapidxml.hpp"
+ #include "gui/pages.hpp"
++extern void gr_reload_rotation(void);
+ #endif // ndef BUILD_TWRPTAR_MAIN
+ #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
+ 	#include "openaes/inc/oaes_lib.h"
+@@ -1659,4 +1660,111 @@
  	return ret;
  }
  
-+// Functions By ArKT , telegram - @ArKT_7, Github - https://github.com/ArKT-7
++// Functions By ArKT, telegram - @ArKT_7, Github - https://github.com/ArKT-7
 +
-+void TWFunc::RotationByArkt() 
++static std::string GetRotationNameByArKT(int rot) {
++    return (rot == 0) ? "Portrait" : (rot == 90) ? "Landscape" : (rot == 180) ? "Flipped Portrait" : "Flipped Landscape";
++}
++
++void TWFunc::SwapXmlByArKT()
 +{
-+    LOGINFO("TWRP ROTATION BY ARKT...\n");
++    const std::string swap_script = R"ArKT(
++        mkdir -p /twres/twres-arkt/backup
 +
-+    // Prepare environment
-+    chdir("/");
-+    umask(022);
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/$f" ] && mv -f "/twres/$f" "/twres/twres-arkt/backup/"
++        done
++        
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/twres-arkt/$f" ] && mv -f "/twres/twres-arkt/$f" "/twres/"
++        done
++        
++        for f in ui.xml splash.xml portrait.xml landscape.xml images; do
++            [ -e "/twres/twres-arkt/backup/$f" ] && mv -f "/twres/twres-arkt/backup/$f" "/twres/twres-arkt/"
++        done
 +
-+    LOGINFO("Backing up current twres...\n");
++        SHARED_IMGS="splashteamwin.png enter_terminal.png shift_terminal.png win.png main_button_half_width_low.png shift_terminal_fill.png splashlogo.png backspace_terminal.png main_button_half_width.png space_terminal.png unlock_icon.png cursor.png"
++        for img in $SHARED_IMGS; do
++            [ -f "/twres/twres-arkt/images/$img" ] && mv -f "/twres/twres-arkt/images/$img" "/twres/images/"
++        done
 +
-+    // Backup current twres layout files
-+    Exec_Cmd("mkdir -p /twres/twres-arkt/backup");
-+    Exec_Cmd("mv /twres/ui.xml /twres/twres-arkt/backup/ui.xml");
-+    Exec_Cmd("mv /twres/splash.xml /twres/twres-arkt/backup/splash.xml");
-+    Exec_Cmd("mv /twres/images /twres/twres-arkt/backup/images");
++        [ -f /ramdisk-files.txt ] && mv -f /ramdisk-files.txt /ramdisk-files-arkt-1.txt
++        [ -f /ramdisk-files-arkt.txt ] && mv -f /ramdisk-files-arkt.txt /ramdisk-files.txt
++        [ -f /ramdisk-files-arkt-1.txt ] && mv -f /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt
++        
++        rm -rf /twres/twres-arkt/backup
++    )ArKT";
 +
-+    Exec_Cmd("[ -f /twres/portrait.xml ] && mv /twres/portrait.xml /twres/twres-arkt/backup/portrait.xml");
-+    Exec_Cmd("[ -f /twres/landscape.xml ] && mv /twres/landscape.xml /twres/twres-arkt/backup/landscape.xml");
++    Exec_Cmd(swap_script);
++}
 +
-+    LOGINFO("Swapping in new layout...\n");
++void TWFunc::PersistRotationByArKT()
++{
++    PartitionManager.Mount_By_Path("/metadata", false);
 +
-+    // Replace with new layout files
-+    Exec_Cmd("mv /twres/twres-arkt/ui.xml /twres/");
-+    Exec_Cmd("mv /twres/twres-arkt/splash.xml /twres/");
-+    Exec_Cmd("mv /twres/twres-arkt/images /twres/");
-+
-+    Exec_Cmd("[ -f /twres/twres-arkt/portrait.xml ] && mv /twres/twres-arkt/portrait.xml /twres/");
-+    Exec_Cmd("[ -f /twres/twres-arkt/landscape.xml ] && mv /twres/twres-arkt/landscape.xml /twres/");
-+
-+    LOGINFO("Moving previous layout into /twres-arkt...\n");
-+
-+    // Restore backup files to twres-arkt folder for future swaps
-+    Exec_Cmd("mv /twres/twres-arkt/backup/ui.xml /twres/twres-arkt/ui.xml");
-+    Exec_Cmd("mv /twres/twres-arkt/backup/splash.xml /twres/twres-arkt/splash.xml");
-+    Exec_Cmd("mv /twres/twres-arkt/backup/images /twres/twres-arkt/images");
-+
-+    // Move specific images back to images folder
-+    Exec_Cmd("mv /twres/twres-arkt/images/splashteamwin.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/enter_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width_low.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/shift_terminal_fill.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/splashlogo.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/backspace_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/main_button_half_width.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/space_terminal.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/unlock_icon.png /twres/images/");
-+    Exec_Cmd("mv /twres/twres-arkt/images/cursor.png /twres/images/");
-+
-+    Exec_Cmd("[ -f /twres/twres-arkt/backup/portrait.xml ] && mv /twres/twres-arkt/backup/portrait.xml /twres/twres-arkt/portrait.xml");
-+    Exec_Cmd("[ -f /twres/twres-arkt/backup/landscape.xml ] && mv /twres/twres-arkt/backup/landscape.xml /twres/twres-arkt/landscape.xml");
-+
-+    // Swap libraries for rotation
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp.so ] && mv /system/lib64/libminuitwrp.so /system/lib64/libminuitwrp-arkt-1.so");
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt.so ] && mv /system/lib64/libminuitwrp-arkt.so /system/lib64/libminuitwrp.so");
-+    Exec_Cmd("[ -f /system/lib64/libminuitwrp-arkt-1.so ] && mv /system/lib64/libminuitwrp-arkt-1.so /system/lib64/libminuitwrp-arkt.so");
-+
-+    // Swap ramdisk files for rotation
-+    Exec_Cmd("[ -f /ramdisk-files.txt ] && mv /ramdisk-files.txt /ramdisk-files-arkt-1.txt");
-+    Exec_Cmd("[ -f /ramdisk-files-arkt.txt ] && mv /ramdisk-files-arkt.txt /ramdisk-files.txt");
-+    Exec_Cmd("[ -f /ramdisk-files-arkt-1.txt ] && mv /ramdisk-files-arkt-1.txt /ramdisk-files-arkt.txt");
-+
-+    LOGINFO("Unmounting and reinitializing...\n");
-+    sync();
-+    DataManager::Flush();
-+
-+    // Unmount partitions forcefully
-+    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/win >/dev/null 2>&1 || true");
-+    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/linux >/dev/null 2>&1 || true");
-+    Exec_Cmd("umount -lf /dev/block/platform/soc/1d84000.ufshc/by-name/esp >/dev/null 2>&1 || true");
-+
-+    Exec_Cmd("sync");
-+
-+    // Fork a child process to kill twrp with SIGUSR1 to rotate UI
-+    pid_t pid = fork();
-+    if (pid == 0) {
-+        ::sleep(1);
-+        LOGINFO("KILLING TWRP FOR ROTATION...\n");
-+        execlp("killall", "killall", "-SIGUSR1", "recovery", (char*)nullptr);
-+        _exit(0); // child exit
++    std::string rot_str, ram_str;
++    if (TWFunc::read_file("/metadata/TWRP/rotation_state", rot_str) != 0 || rot_str.empty()) {
++        if (TWFunc::read_file("/twres/twres-arkt/rotation_state", rot_str) != 0 || rot_str.empty()) {
++            rot_str = "0";
++        }
 +    }
 +
-+    LOGINFO("TWRP ROTATION DONE BY ARKT ...\n");
++    if (TWFunc::read_file("/twres/twres-arkt/rotation_state", ram_str) != 0 || ram_str.empty()) ram_str = "0";
++
++    int saved = atoi(rot_str.c_str());
++    if (saved != 90 && saved != 180 && saved != 270) saved = 0;
++
++    int next = (saved + 90) % 360;
++    DataManager::SetValue("arkt_next_rotation", GetRotationNameByArKT(next));
++
++    property_set("persist.twrp.rotation", std::to_string(saved).c_str());
++
++    Exec_Cmd("mkdir -p /metadata/TWRP");
++    TWFunc::write_to_file("/metadata/TWRP/rotation_state", std::to_string(saved));
++
++    Exec_Cmd("mkdir -p /twres/twres-arkt");
++    TWFunc::write_to_file("/twres/twres-arkt/rotation_state", std::to_string(saved));
++
++    if ((saved == 90 || saved == 270) != (atoi(ram_str.c_str()) == 90 || atoi(ram_str.c_str()) == 270)) {
++        SwapXmlByArKT();
++    }
++
++    sync();
++}
++
++void TWFunc::RotationByArKT()
++{
++    std::thread([] {
++        std::string cur = android::base::GetProperty("persist.twrp.rotation", "0");
++        int next_rot = (std::stoi(cur) + 90) % 360;
++
++        std::string next_rot_str = std::to_string(next_rot);
++        android::base::SetProperty("persist.twrp.rotation", next_rot_str);
++
++        Exec_Cmd("mkdir -p /twres/twres-arkt");
++        TWFunc::write_to_file("/twres/twres-arkt/rotation_state", next_rot_str);
++
++        if (PartitionManager.Mount_By_Path("/metadata", false)) {
++            Exec_Cmd("mkdir -p /metadata/TWRP");
++            TWFunc::write_to_file("/metadata/TWRP/rotation_state", next_rot_str);
++        }
++
++        chdir("/");
++        umask(022);
++        if ((next_rot == 90 || next_rot == 270) != TWFunc::Path_Exists("/twres/landscape.xml")) {
++            SwapXmlByArKT();
++        }
++
++        DataManager::Flush();
++        sync();
++
++        gr_reload_rotation();
++        std::this_thread::sleep_for(std::chrono::milliseconds(200));
++        PageManager::RequestReload();
++
++        int future_rot = (next_rot + 90) % 360;
++        DataManager::SetValue("arkt_next_rotation", GetRotationNameByArKT(future_rot));
++    }).detach();
 +}
 +
  #endif // ndef BUILD_TWRPTAR_MAIN
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.hpp /bootable/recovery/twrp-functions.hpp
---- /bootable/recovery/twrp-functions.hpp	2025-12-23 23:01:31.723896665 +0530
-+++ /bootable/recovery/twrp-functions.hpp	2026-05-09 04:02:24.814590444 +0530
-@@ -75,6 +75,7 @@
+--- /bootable/recovery/twrp-functions.hpp	2026-10-19 08:03:38.678465100 +0530
++++ /bootable/recovery/twrp-functions.hpp	2026-10-19 07:23:43.755216550 +0530
+@@ -75,6 +75,9 @@
  	static timespec timespec_diff(timespec& start, timespec& end);	            // Return a diff for 2 times
  	static int32_t timespec_diff_ms(timespec& start, timespec& end);            // Returns diff in ms
  	static bool Wait_For_File(const string& path, std::chrono::nanoseconds timeout); // Wait For File, True is success, False is timeout;
-+	static void RotationByArkt();
++	static void RotationByArKT();
++	static void SwapXmlByArKT();
++	static void PersistRotationByArKT();
  
  #ifndef BUILD_TWRPTAR_MAIN
  	static int Recursive_Mkdir(string Path);                                    // Recursively makes the entire path

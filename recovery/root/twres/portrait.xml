@@ -866,13 +866,13 @@
 				<text>%tw_action_text2%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<button style="main_button_half_height">
 				<condition var1="tw_has_cancel" var2="1"/>
-				<placement x="%center_x%" y="%row21a_y%"/>
+				<placement x="%center_x%" y="%row22a_y%"/>
 				<text>{@cancel_btn=Cancel}</text>
 				<action function="%tw_cancel_action%">%tw_cancel_param%</action>
 			</button>
@@ -913,9 +913,9 @@
 				<text>%tw_action_text2%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<condition var1="tw_operation_state" var2="1"/>
@@ -960,7 +960,7 @@
 				<text>{@successful=Successful}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install"/>
 
 			<button style="main_button_half_height">
 				<placement x="%indent%" y="%row21a_y%"/>
@@ -1655,6 +1655,12 @@
 			<template name="tabs_backup"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="16" y="%row_tab_y%" w="344" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="0" y="%row_tab_y%" w="%tab3_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -1940,6 +1946,12 @@
 			<template name="tabs_backup"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="16" y="%row_tab_y%" w="344" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="0" y="%row_tab_y%" w="%tab3_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -2086,6 +2098,12 @@
 			</button>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="%tab3_col3_x%" y="%row_tab_y%" w="344" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="%tab3_col3_x%" y="%row_tab_y%" w="%tab3_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -2194,6 +2212,12 @@
 			</button>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="%tab3_col3_x%" y="%row_tab_y%" w="344" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="%tab3_col3_x%" y="%row_tab_y%" w="%tab3_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -2579,9 +2603,9 @@
 				<text>{@restore_try_decrypt=Encrypted Backup - Trying Decryption}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="decrypt_backup"/>
@@ -2780,17 +2804,17 @@
 				<text>%tw_operation% %tw_partition%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install"/>
 
 			<text style="text_m_accent">
-				<placement x="%indent%" y="%row19_y%"/>
+				<placement x="%indent%" y="%row22a_y%"/>
 				<text>{@progress=Progress:}</text>
 			</text>
 
 			<text style="text_m">
-				<placement x="%indent%" y="%row20_y%"/>
+				<placement x="%indent%" y="%row23a_y%"/>
 				<text>%tw_size_progress%</text>
 			</text>
 
@@ -3442,6 +3466,12 @@
 			<template name="tabs_settings"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="16" y="%row_tab_y%" w="200" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="0" y="%row_tab_y%" w="%tab5_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -3692,6 +3722,31 @@
 				</actions>
 			</slidervalue>
 
+			<slidervalue>
+				<placement x="indent" y="%row15_y%" w="%content_width%"/>
+				<text>Background Blur: %arkt_blur_val%%</text>
+				<data variable="arkt_blur_val" min="0" max="100"/>
+			</slidervalue>
+
+			<checkbox>
+				<placement x="%indent%" y="%row19a_y%"/>
+				<text>Enable Rounded Corners</text>
+				<data variable="arkt_rounded_corners"/>
+			</checkbox>
+
+			<checkbox>
+				<placement x="%indent%" y="%row21_y%"/>
+				<text>Exclude Blur from Status Bar</text>
+				<data variable="arkt_blur_exclude_status"/>
+			</checkbox>
+
+			<checkbox>
+				<placement x="%indent%" y="%row22a_y%"/>
+				<text>Exclude Dark Tint from Status Bar</text>
+				<condition var1="arkt_blur_exclude_status" var2="1"/>
+				<data variable="arkt_tint_exclude_status"/>
+			</checkbox>
+
 			<action>
 				<touch key="home"/>
 				<action function="page">main</action>
@@ -3776,6 +3831,12 @@
 			<template name="tabs_settings"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="%tab5_col5_x%" y="%row_tab_y%" w="200" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="%tab5_col5_x%" y="%row_tab_y%" w="%tab5_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -4022,7 +4083,7 @@
 						<action function="page">confirm_action</action>
 					</actions>
 				</listitem>
-				<listitem name="Rotate Screen to Landscape">
+				<listitem name="Rotate Screen to %arkt_next_rotation%">
 				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
@@ -4859,9 +4920,9 @@
 				<text>%tw_fm_text1%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<conditions>
@@ -5338,9 +5399,9 @@
 				<text>{@decrypt_data_trying=Trying Decryption}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="decrypt"/>
@@ -5423,9 +5484,9 @@
 				<text>{@refresh_sizes_btn=Refresh Sizes}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="refreshsizes"/>
@@ -5581,13 +5642,13 @@
 				<text>{@fastboot_button=Fastboot}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install"/>
 
 			<button style="main_button_half_height">
 				<condition var1="tw_enable_fastboot" op="=" var2="1" />
-				<placement x="%indent%" y="%row21a_y%"/>
+				<placement x="%indent%" y="%row22a_y%"/>
 				<text>{@enable_adb=Enable ADB}</text>
 				<actions>
 					<action function="enableadb"/>
@@ -5598,7 +5659,7 @@
 
 			<button style="main_button_half_height">
 				<condition var1="tw_enable_adb" op="=" var2="1" />
-				<placement x="%indent%" y="%row21a_y%"/>
+				<placement x="%indent%" y="%row22a_y%"/>
 				<text>{@enable_fastboot=Enable Fastboot}</text>
 				<actions>
 					<action function="enablefastboot"/>
@@ -5608,7 +5669,7 @@
 			</button>
 
 			<button style="main_button_half_height">
-				<placement x="%center_x%" y="%row21a_y%"/>
+				<placement x="%center_x%" y="%row22a_y%"/>
 				<text>{@reboot_btn=Reboot}</text>
 				<action function="page">fastbootreboot</action>
 			</button>
@@ -5744,11 +5805,9 @@
 		</page>
 
 		<page name="select_storage">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
-			<fill color="%background_color%">
+			<fill color="%background_color%" radius="32">
 				<placement x="%indent%" y="row5_y" w="%content_width%" h="%dialog_height%"/>
 			</fill>
 
@@ -5827,18 +5886,18 @@
 		</page>
 
 		<page name="rotation_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="font_l" color="#FFC107"/>
-				<placement x="%center_x%" y="%row11_y%" placement="5"/>
-				<text>Rotating Screen Now, PLease wait!</text>
+				<placement x="%center_x%" y="%row10a_y%" placement="5"/>
+				<text>Rotating Screen Now, Please wait!</text>
 			</text>
 
 			<text>
 				<font resource="font_l" color="#FF9800"/>
 				<placement x="%center_x%" y="%row12_y%" placement="5"/>
-				<text>Twrp will rotate to Landscape mode</text>
+				<text>TWRP will rotate to %arkt_next_rotation% mode</text>
 			</text>
 
 			<action>
@@ -5849,11 +5908,9 @@
 		</page>
 
 		<page name="select_language">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
-			<fill color="%background_color%">
+			<fill color="%background_color%" radius="32">
 				<placement x="%indent%" y="row5_y" w="%content_width%" h="%dialog_height%"/>
 			</fill>
 

@@ -2,7 +2,7 @@
 
 MODIFIED_DIR=$(realpath ~/android/twrp-nabu)
 CLEAN_DIR=$(realpath ~/android/backup-twrp)
-PATCH_OUT=$(realpath ~/android/twrp-nabu/device/xiaomi/nabu/.arkt-changes)
+PATCH_OUT=$(realpath ~/android/twrp-nabu/device/xiaomi/nabu/.arkt-changes/)
 DELETE_SCRIPT="$PATCH_OUT/deleted_files.sh"
 
 echo "[+] Backing up your TWRP edits from: $MODIFIED_DIR"

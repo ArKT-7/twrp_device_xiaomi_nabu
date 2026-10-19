@@ -304,6 +304,7 @@ twres/twres-arkt/images/backspace.png
 twres/twres-arkt/images/main_button_half_height_full_width.png
 twres/twres-arkt/images/enter.png
 twres/twres-arkt/images/shift_fill.png
+twres/twres-arkt/rotation_state
 twres/twres-arkt/splash.xml
 twres/twres-arkt/portrait.xml
 twres/twres-arkt/ui.xml
@@ -451,7 +452,6 @@ system/lib64/libminuitwrp.so
 system/lib64/libpng.so
 system/lib64/libbase.so
 system/lib64/libcppbor.so
-system/lib64/libminuitwrp-arkt.so
 system/lib64/libsqlite.so
 system/lib64/android.hardware.security.secureclock-V1-ndk_platform.so
 system/lib64/android.hardware.health@2.1.so
@@ -3421,7 +3421,6 @@ system/etc/twrp.flags
 system/etc/vintf
 system/etc/vintf/manifest
 system/etc/vintf/manifest/android.hidl.allocator@1.0-service.xml
-system/etc/vintf/manifest/boot-service.qti.xml
 system/etc/vintf/manifest/android.system.keystore2-service.xml
 system/etc/vintf/manifest/android.system.suspend@1.0-service.xml
 system/etc/vintf/manifest.xml
@@ -3614,6 +3613,7 @@ system/bin/e2fsdroid
 system/bin/fsync
 system/bin/chown
 system/bin/reboot
+system/bin/clean_vintf.sh
 system/bin/dmesg
 system/bin/uname
 system/bin/uniq

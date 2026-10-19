@@ -231,6 +231,11 @@
 		<variable name="tw_clock_24_pos_x" value="0"/>
 		<variable name="tw_cpu_pos_x" value="0"/>
 		<variable name="tw_battery_pos_x" value="0"/>
+		<variable name="arkt_status_separator_y" value="96"/>
+		<variable name="arkt_blur_val" value="69" persist="1"/>
+		<variable name="arkt_blur_exclude_status" value="1" persist="1"/>
+		<variable name="arkt_tint_exclude_status" value="0" persist="1"/>
+		<variable name="arkt_rounded_corners" value="1" persist="1"/>
 	</variables>
 
 	<mousecursor>
@@ -243,8 +248,8 @@
 		<template name="page">
 			<background color="%background_color%"/>
 
-			<fill color="%accent_color%">
-				<placement x="0" y="0" w="%screen_width%" h="%header_height%"/>
+			<fill color="%accent_color%" radius="18">
+				<placement x="0" y="-40" w="%screen_width%" h="296"/>
 			</fill>
 
 			<image>
@@ -394,13 +399,30 @@
 
 		<template name="progress_bar_install_max">
 			<progressbar>
+				<condition var1="tw_has_cancel" op="!=" var2="1"/>
 				<placement x="%indent%" y="%row24a_y%"/>
 				<resource empty="progress_empty" full="progress_full"/>
 				<data name="ui_progress"/>
 			</progressbar>
 
 			<animation>
+				<condition var1="tw_has_cancel" op="!=" var2="1"/>
 				<placement x="%indent%" y="%row24a_y%"/>
+				<resource name="progress"/>
+				<speed fps="24" render="2"/>
+				<loop frame="1"/>
+			</animation>
+
+			<progressbar>
+				<condition var1="tw_has_cancel" var2="1"/>
+				<placement x="%indent%" y="%row21a_y%"/>
+				<resource empty="progress_empty" full="progress_full"/>
+				<data name="ui_progress"/>
+			</progressbar>
+
+			<animation>
+				<condition var1="tw_has_cancel" var2="1"/>
+				<placement x="%indent%" y="%row21a_y%"/>
 				<resource name="progress"/>
 				<speed fps="24" render="2"/>
 				<loop frame="1"/>
@@ -524,8 +546,8 @@
 		</template>
 
 		<template name="tabs_backup">
-			<fill color="%accent_color%">
-				<placement x="0" y="row1_y" w="%screen_width%" h="tab_height"/>
+			<fill color="%accent_color%" radius="18">
+				<placement x="0" y="220" w="%screen_width%" h="132"/>
 			</fill>
 
 			<button style="tab">
@@ -542,8 +564,8 @@
 		</template>
 
 		<template name="tabs_settings">
-			<fill color="%accent_color%">
-				<placement x="0" y="row1_y" w="%screen_width%" h="tab_height"/>
+			<fill color="%accent_color%" radius="18">
+				<placement x="0" y="220" w="%screen_width%" h="132"/>
 			</fill>
 
 			<button style="tab">
@@ -607,15 +629,33 @@
 
 		<template name="console_install_max">
 			<console>
+				<condition var1="tw_has_cancel" op="!=" var2="1"/>
 				<placement x="%indent%" y="%row2_y%" w="%content_width%" h="1408"/>
 			</console>
 
 			<fill color="%fileselector_linecolor%">
+				<condition var1="tw_has_cancel" op="!=" var2="1"/>
 				<placement x="%indent%" y="row2_y" w="%content_width%" h="input_line_width" placement="1"/>
 			</fill>
 
 			<fill color="%fileselector_linecolor%">
+				<condition var1="tw_has_cancel" op="!=" var2="1"/>
 				<placement x="%indent%" y="row24_y" w="%content_width%" h="input_line_width"/>
+			</fill>
+
+			<console>
+				<condition var1="tw_has_cancel" var2="1"/>
+				<placement x="%indent%" y="%row2_y%" w="%content_width%" h="1216"/>
+			</console>
+
+			<fill color="%fileselector_linecolor%">
+				<condition var1="tw_has_cancel" var2="1"/>
+				<placement x="%indent%" y="row2_y" w="%content_width%" h="input_line_width" placement="1"/>
+			</fill>
+
+			<fill color="%fileselector_linecolor%">
+				<condition var1="tw_has_cancel" var2="1"/>
+				<placement x="%indent%" y="row21_y" w="%content_width%" h="input_line_width"/>
 			</fill>
 		</template>
 

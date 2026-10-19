@@ -99,7 +99,7 @@
 
 		<style name="tab">
 			<highlight color="%highlight_color%"/>
-			<fill color="%accent_color%"/>
+			<fill color="%transparent%"/>
 			<font resource="font_s" color="%text_button_color%"/>
 		</style>
 
@@ -540,9 +540,9 @@
 				<text>%tw_file%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<condition var1="tw_operation_state" var2="1"/>
@@ -676,7 +676,7 @@
 
 			<button style="main_button_half_width">
 				<condition var1="tw_sleep" op="&gt;" var2="0"/>
-				<placement x="%center_x%" y="%row15a_y%"/>
+				<placement x="%col2_x_right%" y="%row15a_y%"/>
 				<text>{@cancel_btn=Cancel}</text>
 				<actions>
 					<action function="set">tw_install_reboot=0</action>
@@ -915,9 +915,9 @@
 				<text>%tw_action_text2%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<button style="main_button_half_width">
 				<condition var1="tw_has_cancel" var2="1"/>
@@ -962,9 +962,9 @@
 				<text>%tw_action_text2%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<condition var1="tw_operation_state" var2="1"/>
@@ -2417,9 +2417,9 @@
 				<text>{@restore_try_decrypt=Encrypted Backup - Trying Decryption}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="decrypt_backup"/>
@@ -3082,7 +3082,7 @@
 
 			<text style="text_m">
 				<condition var1="tw_has_boot_slots" var2="1"/>
-				<placement x="%col1_x_header%" y="%row14_y%"/>
+				<placement x="%col1_x_header%" y="%row4_header_y%"/>
 				<text>{@current_boot_slot=Current Slot: %tw_active_slot%}</text>
 			</text>
 
@@ -3270,6 +3270,12 @@
 			<template name="tabs_settings"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="16" y="%row_tab_y%" w="368" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="0" y="%row_tab_y%" w="%tab5_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -3567,6 +3573,31 @@
 				</actions>
 			</slidervalue>
 
+			<slidervalue>
+				<placement x="col1_x_left" y="%row15_y%" w="%content_width%"/>
+				<text>Background Blur: %arkt_blur_val%%</text>
+				<data variable="arkt_blur_val" min="0" max="100"/>
+			</slidervalue>
+
+			<checkbox>
+				<placement x="%col1_x_left%" y="%row17a_y%"/>
+				<text>Enable Rounded Corners</text>
+				<data variable="arkt_rounded_corners"/>
+			</checkbox>
+
+			<checkbox>
+				<placement x="%col1_x_left%" y="%row13_y%"/>
+				<text>Exclude Blur from Status Bar</text>
+				<data variable="arkt_blur_exclude_status"/>
+			</checkbox>
+
+			<checkbox>
+				<placement x="%col1_x_left%" y="%row14a_y%"/>
+				<text>Exclude Dark Tint from Status Bar</text>
+				<condition var1="arkt_blur_exclude_status" var2="1"/>
+				<data variable="arkt_tint_exclude_status"/>
+			</checkbox>
+
 			<action>
 				<touch key="home"/>
 				<action function="page">main</action>
@@ -3651,6 +3682,12 @@
 			<template name="tabs_settings"/>
 
 			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="1"/>
+				<placement x="%tab5_col5_x%" y="%row_tab_y%" w="368" h="%tab_indicator_height%"/>
+			</fill>
+
+			<fill color="%text_color%">
+				<condition var1="arkt_rounded_corners" var2="0"/>
 				<placement x="%tab5_col5_x%" y="%row_tab_y%" w="%tab5_width%" h="%tab_indicator_height%"/>
 			</fill>
 
@@ -3899,7 +3936,7 @@
 						<action function="page">confirm_action</action>
 					</actions>
 				</listitem>
-				<listitem name="Rotate Screen to Portrait">
+				<listitem name="Rotate Screen to %arkt_next_rotation%">
 				<action function="rotationbyarkt"/>
 				</listitem>
 			</listbox>
@@ -4351,7 +4388,7 @@
 			</button>
 
 			<button style="main_button_half_width">
-edi				<conditions>
+				<conditions>
 					<condition var1="tw_include_nano" var2="1"/>
 					<condition var1="tw_fm_isfolder" var2="0"/>
 				</conditions>
@@ -4734,9 +4771,9 @@ edi				<conditions>
 				<text>%tw_fm_text1%</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<conditions>
@@ -5206,9 +5243,9 @@ edi				<conditions>
 				<text>{@decrypt_data_trying=Trying Decryption}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="decrypt"/>
@@ -5291,9 +5328,9 @@ edi				<conditions>
 				<text>{@refresh_sizes_btn=Refresh Sizes}</text>
 			</text>
 
-			<template name="console"/>
+			<template name="console_install_max"/>
 
-			<template name="progress_bar"/>
+			<template name="progress_bar_install_max"/>
 
 			<action>
 				<action function="refreshsizes"/>
@@ -5792,11 +5829,9 @@ edi				<conditions>
 		</page>
 
 		<page name="select_storage">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
-			<fill color="%background_color%">
+			<fill color="%background_color%" radius="32">
 				<placement x="%col2_x_left%" y="row4_y" w="%dialog_width%" h="%dialog_height%"/>
 			</fill>
 
@@ -5986,18 +6021,18 @@ edi				<conditions>
 		</page>
 
 		<page name="rotation_warn">
-			<background color="#000000CC"/>
+			<background color="%semi_transparent%"/>
 
 			<text>
 				<font resource="keylabel" color="#FFC107"/>
-				<placement x="%center_x%" y="%row9_y%" placement="5"/>
-				<text>Rotating Screen Now, PLease wait!</text>
+				<placement x="%center_x%" y="%row8a_y%" placement="5"/>
+				<text>Rotating Screen Now, Please wait!</text>
 			</text>
 
 			<text>
 				<font resource="keylabel" color="#FF9800"/>
 				<placement x="%center_x%" y="%row10_y%" placement="5"/>
-				<text>Twrp will rotate to Portrait mode</text>
+				<text>TWRP will rotate to %arkt_next_rotation% mode</text>
 			</text>
 
 			<action>
@@ -6008,11 +6043,9 @@ edi				<conditions>
 		</page>
 
 		<page name="select_language">
-			<fill color="%semi_transparent%">
-				<placement x="0" y="0" w="%screen_width%" h="%screen_height%"/>
-			</fill>
+			<background color="%semi_transparent%"/>
 
-			<fill color="%background_color%">
+			<fill color="%background_color%" radius="32">
 				<placement x="%col2_x_left%" y="row4_y" w="%dialog_width%" h="%dialog_height%"/>
 			</fill>
 
