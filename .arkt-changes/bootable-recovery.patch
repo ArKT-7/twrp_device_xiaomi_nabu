@@ -1077,17 +1077,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/twrp.cpp /bootable/recovery/twrp.c
 diff -ruN '--exclude=.git' /bootable/recovery/twrp-functions.cpp /bootable/recovery/twrp-functions.cpp
 --- /bootable/recovery/twrp-functions.cpp	2026-07-23 12:30:59.414842317 +0530
 +++ /bootable/recovery/twrp-functions.cpp	2026-10-15 04:10:00.439358378 +0530
-@@ -59,6 +59,9 @@
+@@ -59,6 +59,8 @@
  #include <sys/reboot.h>
  #include "gui/rapidxml.hpp"
  #include "gui/pages.hpp"
 +#include <libdm/dm.h>
-+#include "minuitwrp/minui.h"
 +extern void gr_reload_rotation(void);
  #endif // ndef BUILD_TWRPTAR_MAIN
  #ifndef TW_EXCLUDE_ENCRYPTED_BACKUPS
  	#include "openaes/inc/oaes_lib.h"
-@@ -1659,4 +1662,578 @@
+@@ -1659,4 +1661,578 @@
  	return ret;
  }
  
