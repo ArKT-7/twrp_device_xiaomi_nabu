@@ -30,17 +30,26 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2026-10-19 08:03:38.677557047 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-10-19 07:30:45.785130009 +0530
-@@ -210,6 +210,8 @@
++++ /bootable/recovery/gui/action.cpp	2026-10-20 01:23:22.431233571 +0530
+@@ -22,6 +22,7 @@
+ #include <string.h>
+ #include <fcntl.h>
+ #include <sys/stat.h>
++#include <sys/statvfs.h>
+ #include <sys/time.h>
+ #include <sys/mman.h>
+ #include <sys/types.h>
+@@ -210,6 +211,9 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
 +		ADD_ACTION(rotationbyarkt);
 +		ADD_ACTION(installbyarkt);
++		ADD_ACTION(checkmagicspacebyarkt);
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -557,6 +559,7 @@
+@@ -557,6 +561,7 @@
  
  int GUIAction::reboot(std::string arg)
  {
@@ -48,7 +57,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	sync();
  	DataManager::SetValue("tw_gui_done", 1);
  	DataManager::SetValue("tw_reboot_arg", arg);
-@@ -672,8 +675,11 @@
+@@ -672,8 +677,11 @@
  		gui_msg("simulating=Simulating actions...");
  	else {
  		DataManager::ResetDefaults();
@@ -60,273 +69,183 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	}
  	operation_end(0);
  	return 0;
-@@ -1074,6 +1080,265 @@
+@@ -1069,11 +1077,175 @@
+ 	return 0;
+ }
+ 
++static const std::vector<std::string> arkt_required_parts = {
++	"boot", "dtbo", "odm", "product", "system",
++	"system_ext", "vbmeta", "vbmeta_system", "vendor", "vendor_boot"
++};
++
++static uint64_t get_img_size(const std::string& path)
++{
++	struct stat st;
++	if (stat(path.c_str(), &st) == 0 && st.st_size > 0)
++		return (uint64_t)st.st_size;
++	return 0;
++}
++
+ int GUIAction::flash(std::string arg)
+ {
  	int i, ret_val = 0, wipe_cache = 0;
++
++	if (DataManager::GetIntValue("arkt_magic_auto_installer") == 1) {
++		if (checkmagicspacebyarkt("") != 0) {
++			return 0;
++		}
++	}
++
  	// We're going to jump to this page first, like a loading page
  	gui_changePage(arg);
 +	if (DataManager::GetIntValue("arkt_magic_auto_installer") == 1) {
++		int magic_ret = 1;
++		const std::string magic_dir = "/sdcard/arkt-magic/";
++		const std::string by_name = "/dev/block/platform/soc/1d84000.ufshc/by-name/";
++
 +		operation_start("ArKT Magic Auto-installer flasher");
++		DataManager::SetValue(TW_ZIP_INDEX, 1);
++		DataManager::SetValue("tw_file", TWFunc::Get_Filename(zip_queue[0]));
 +
 +		if (zip_queue_index != 1) {
-+			LOGERR("Error!! Please select only one ZIP file for magic flashing option");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
++			LOGERR("Error!! Please select only one ZIP file for magic flashing option\n");
++			goto magic_done;
 +		}
 +
-+		std::string df_output;
-+		if (TWFunc::Exec_Cmd("df /sdcard", df_output, true) == 0) {
-+			std::istringstream stream(df_output);
++		{
++			std::string zip_path = zip_queue[0];
++			LOGINFO("ZIP full path: %s\n", zip_path.c_str());
++
++			gui_print("\nStarting Magic Auto-installer flashing...");
++			gui_print("\nChecking for payload.bin in ZIP...");
++			if (TWFunc::Exec_Cmd("unzip -l \"" + zip_path + "\" | grep -q payload.bin", false) != 0) {
++				LOGERR("Error!! ZIP does not contain payload.bin, Not a valid OTA/Recovery ROM ZIP\n");
++				goto magic_done;
++			}
++
++			gui_print("Verifying OTA ZIP contents...\n ");
++			std::string payload_out;
++			if (TWFunc::Exec_Cmd("/system/bin/otaripper -l \"" + zip_path + "\"", payload_out, true) != 0 || payload_out.empty()) {
++				LOGERR("Error!! Failed to analyze the OTA ZIP\n");
++				goto magic_done;
++			}
++
++			std::istringstream stream(payload_out);
 +			std::string line;
-+			int line_num = 0;
 +			while (std::getline(stream, line)) {
-+				line_num++;
-+				if (line_num == 2) {
-+					std::istringstream line_stream(line);
-+					std::string fs, size, used, avail, use_pct, mount;
-+					line_stream >> fs >> size >> used >> avail >> use_pct >> mount;
-+					long available_kb = std::stol(avail);
-+					if (available_kb < 15000000) {
-+						LOGERR("Error!! Not enough space on /sdcard. Around 15GB required!");
-+						zip_queue_index = 0;
-+						DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+						DataManager::SetValue("arkt_magic_auto_installer", 0);
-+						operation_end(1);
-+						return 1;
++				gui_print("%s\n", line.c_str());
++			}
++
++			std::vector<std::string> missing;
++			for (const auto& part : arkt_required_parts) {
++				if (payload_out.find(part) == std::string::npos) {
++					missing.push_back(part);
++				}
++			}
++			if (!missing.empty()) {
++				LOGERR("Error!! OTA ZIP is missing the following required images:\n");
++				for (const auto& part : missing) {
++					gui_print("  - %s\n", part.c_str());
++				}
++				goto magic_done;
++			}
++			gui_print("OTA ZIP contains all required images");
++
++			TWFunc::Exec_Cmd("rm -rf " + magic_dir + " && mkdir -p " + magic_dir);
++			gui_print("\nExtracting images directly from ZIP...");
++			if (TWFunc::Exec_Cmd("/system/bin/otaripper -n -o " + magic_dir + " \"" + zip_path + "\"", true) != 0) {
++				LOGERR("Error!! Failed to extract images from OTA ZIP\n");
++				goto magic_done;
++			}
++
++			TWFunc::Exec_Cmd("mv " + magic_dir + "extracted_*/* " + magic_dir + " && rm -rf " + magic_dir + "extracted_*");
++
++			gui_print("Building super.img...");
++			std::string lpmake_cmd = "lpmake "
++				"--metadata-size 65536 "
++				"--metadata-slots 3 "
++				"--device super:9126805504 "
++				"--super-name super "
++				"--group super_group_a:9126805504 "
++				"--group super_group_b:9126805504 ";
++
++			std::vector<std::string> super_parts = {"odm", "product", "system", "system_ext", "vendor"};
++			for (const auto& part : super_parts) {
++				std::string part_path = magic_dir + part + ".img";
++				uint64_t sz = get_img_size(part_path);
++				if (sz == 0) {
++					LOGERR("Error!! Failed to get size of %s.img\n", part.c_str());
++					goto magic_done;
++				}
++
++				lpmake_cmd += "--partition " + part + "_a:readonly:" + std::to_string(sz) + ":super_group_a "
++							+ "--image " + part + "_a=" + part_path + " "
++							+ "--partition " + part + "_b:readonly:0:super_group_b ";
++			}
++
++			lpmake_cmd += "--virtual-ab --output " + magic_dir + "super.img";
++			if (TWFunc::Exec_Cmd(lpmake_cmd, true) != 0) {
++				LOGERR("Error!! lpmake failed to create super.img\n");
++				goto magic_done;
++			}
++
++			for (const auto& part : super_parts) {
++				unlink((magic_dir + part + ".img").c_str());
++			}
++			gui_print("super.img built successfully");
++
++			gui_print("\nFlashing images to device partitions...");
++			std::vector<std::string> flash_parts = {
++				"boot", "dtbo", "vbmeta", "vbmeta_system", "vendor_boot", "super"
++			};
++
++			for (const auto& part : flash_parts) {
++				std::string img_path = magic_dir + part + ".img";
++				uint64_t sz = get_img_size(img_path);
++				if (sz == 0) {
++					LOGERR("Error!! Failed to get size of %s.img\n", part.c_str());
++					goto magic_done;
++				}
++
++				if (part == "super") {
++					gui_print("Flashing super.img to super partition...");
++					std::string cmd = "pv -s " + std::to_string(sz) + " \"" + img_path + "\" > \"" + by_name + "super\"";
++					if (TWFunc::Exec_Cmd(cmd, true) != 0) {
++						LOGERR("Error!! Failed to flash super.img\n");
++						goto magic_done;
 +					}
-+					break;
++				} else {
++					for (const auto& slot : {"_a", "_b"}) {
++						std::string target = part + slot;
++						gui_print("Flashing %s.img to %s...", part.c_str(), target.c_str());
++						std::string cmd = "pv -s " + std::to_string(sz) + " \"" + img_path + "\" > \"" + by_name + target + "\"";
++						if (TWFunc::Exec_Cmd(cmd, true) != 0) {
++							LOGERR("Error!! Failed to flash %s.img to %s\n", part.c_str(), target.c_str());
++							goto magic_done;
++						}
++					}
 +				}
 +			}
-+		} else {
-+			LOGERR("Error!! Failed to check /sdcard free space.");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
++
++			gui_print("\nMagic Flashing completed!");
++			gui_print("\nIf Clean Install/Not updating: Make sure to Format/Wipe data!\n ");
++			PartitionManager.Set_Active_Slot("A");
++			magic_ret = 0;
 +		}
 +
-+		std::string zip_path = zip_queue[0];
-+		LOGINFO("ZIP full path: %s\n", zip_path.c_str());
-+
-+		gui_print("\nStarting Magic Auto-installer flashing...");
-+		gui_print("\nChecking for payload.bin in ZIP...");
-+		std::string zip_check_cmd = "unzip -l \"" + zip_path + "\" | grep payload.bin";
-+		std::string payload_check_out;
-+		if (TWFunc::Exec_Cmd(zip_check_cmd, payload_check_out, true) != 0 || payload_check_out.empty()) {
-+			LOGERR("Error!! ZIP does not contain payload.bin, Not a valid OTA/Recovery ROM ZIP");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+
-+		gui_print("Verifying OTA ZIP contents...");
-+		gui_print(" ");
-+		std::string analyze_cmd = "/system/bin/otaripper -l \"" + zip_path + "\"";
-+		std::string payload_out;
-+		if (TWFunc::Exec_Cmd(analyze_cmd, payload_out, true) != 0 || payload_out.empty()) {
-+			LOGERR("Error!! Failed to analyze the OTA ZIP");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+		std::istringstream stream(payload_out);
-+		std::string line;
-+		while (std::getline(stream, line)) {
-+			gui_print("%s\n", line.c_str());
-+		}
-+
-+		std::vector<std::string> required_parts = {
-+			"boot", "dtbo", "odm", "product", "system",
-+			"system_ext", "vbmeta", "vbmeta_system", "vendor", "vendor_boot"
-+		};
-+		std::vector<std::string> missing;
-+
-+		for (const auto& part : required_parts) {
-+			if (payload_out.find(part) == std::string::npos) {
-+				missing.push_back(part);
-+			}
-+		}
-+
-+		if (!missing.empty()) {
-+			LOGERR("Error!! OTA ZIP is missing the following required images:");
-+			for (const auto& part : missing) {
-+				gui_print("  - %s\n", part.c_str());
-+			}
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+		gui_print("OTA ZIP contains all required images");
-+
-+		gui_print("\nExtracting images directly from ZIP...");
-+		std::string dump_cmd = "/system/bin/otaripper -n -o /sdcard/arkt-magic/ \"" + zip_path + "\"";
-+		std::string dump_out;
-+		if (TWFunc::Exec_Cmd(dump_cmd, true) != 0) {
-+			LOGERR("Error!! Failed to extract images from OTA ZIP");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+		TWFunc::Exec_Cmd("mv /sdcard/arkt-magic/extracted_*/* /sdcard/arkt-magic/");
-+		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/extracted_*");
-+
-+		gui_print("Building super.img...");
-+		std::string lpmake_cmd = "lpmake "
-+			"--metadata-size 65536 "
-+			"--metadata-slots 3 "
-+			"--device super:9126805504 "
-+			"--super-name super "
-+			"--group super_group_a:9126805504 "
-+			"--group super_group_b:9126805504 ";
-+
-+		std::vector<std::string> partitions = {"odm", "product", "system", "system_ext", "vendor"};
-+		for (const auto& part : partitions) {
-+			std::string part_path = "/sdcard/arkt-magic/" + part + ".img";
-+			std::string wc_cmd = "wc -c < \"" + part_path + "\"";
-+			std::string wc_output;
-+			if (TWFunc::Exec_Cmd(wc_cmd, wc_output, true) != 0 || wc_output.empty()) {
-+				LOGERR("Error!! Failed to get size of %s.img", part.c_str());
-+				zip_queue_index = 0;
-+				DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+				DataManager::SetValue("arkt_magic_auto_installer", 0);
-+				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+				operation_end(1);
-+				return 1;
-+			}
-+			wc_output.erase(std::remove(wc_output.begin(), wc_output.end(), '\n'), wc_output.end());
-+			wc_output.erase(std::remove(wc_output.begin(), wc_output.end(), ' '), wc_output.end());
-+
-+			lpmake_cmd += "--partition " + part + "_a:readonly:" + wc_output + ":super_group_a "
-+						+ "--image " + part + "_a=" + part_path + " "
-+						+ "--partition " + part + "_b:readonly:0:super_group_b ";
-+		}
-+
-+		lpmake_cmd += "--virtual-ab --output /sdcard/arkt-magic/super.img";
-+		if (TWFunc::Exec_Cmd(lpmake_cmd, true) != 0) {
-+			LOGERR("Error!! lpmake failed to create super.img");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		}
-+        std::vector<std::string> parts_to_delete = {
-+			"odm", "product", "system", "system_ext", "vendor"
-+		};
-+		for (const auto& part : parts_to_delete) {
-+			std::string cmd = "rm -f /sdcard/arkt-magic/" + part + ".img";
-+			TWFunc::Exec_Cmd(cmd);
-+		}
-+		gui_print("super.img built successfully");
-+
-+		gui_print("\nFlashing images to device partitions...");
-+		std::vector<std::string> flash_parts = {
-+			"boot",
-+			"dtbo",
-+			"vbmeta",
-+			"vbmeta_system",
-+			"vendor_boot"
-+		};
-+
-+		for (const auto& part : flash_parts) {
-+			for (const auto& slot : {"a", "b"}) {
-+				std::string img_path = "/sdcard/arkt-magic/" + part + ".img";
-+				std::string block_path = "/dev/block/platform/soc/1d84000.ufshc/by-name/" + part + "_" + slot;
-+				std::string size_cmd = "wc -c < \"" + img_path + "\"";
-+				std::string size_out;
-+				if (TWFunc::Exec_Cmd(size_cmd, size_out, true) != 0 || size_out.empty()) {
-+					LOGERR("Error!! Failed to get size of %s.img", img_path.c_str());
-+					zip_queue_index = 0;
-+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+					DataManager::SetValue("arkt_magic_auto_installer", 0);
-+					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+					operation_end(1);
-+					return 1;
-+				}
-+				size_out.erase(std::remove(size_out.begin(), size_out.end(), '\n'), size_out.end());
-+				size_out.erase(std::remove(size_out.begin(), size_out.end(), ' '), size_out.end());
-+
-+				//std::string flash_cmd = "pv -s " + size_out + " \"" + img_path + "\" | dd of=\"" + block_path + "\" bs=1M conv=fsync status=none";
-+				std::string flash_cmd = "pv -s " + size_out + " \"" + img_path + "\" > \"" + block_path + "\"";
-+				gui_print("Flashing %s.img to %s...", part.c_str(), (part + "_" + slot).c_str());
-+
-+				if (TWFunc::Exec_Cmd(flash_cmd, true) != 0) {
-+					LOGERR("Error!! Failed to flash %s to %s\n", img_path.c_str(), block_path.c_str());
-+					zip_queue_index = 0;
-+					DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+					DataManager::SetValue("arkt_magic_auto_installer", 0);
-+					TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+					operation_end(1);
-+					return 1;
-+				}
-+			}
-+		}
-+
-+		std::string super_img_path = "/sdcard/arkt-magic/super.img";
-+		std::string super_block = "/dev/block/platform/soc/1d84000.ufshc/by-name/super";
-+		std::string super_size_cmd = "wc -c < \"" + super_img_path + "\"";
-+		std::string super_size_out;
-+		if (TWFunc::Exec_Cmd(super_size_cmd, super_size_out, true) != 0 || super_size_out.empty()) {
-+			LOGERR("Error!! Failed to get size of super.img");
-+			zip_queue_index = 0;
-+			DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+			DataManager::SetValue("arkt_magic_auto_installer", 0);
-+			TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+			operation_end(1);
-+			return 1;
-+		} else {
-+			super_size_out.erase(std::remove(super_size_out.begin(), super_size_out.end(), '\n'), super_size_out.end());
-+			super_size_out.erase(std::remove(super_size_out.begin(), super_size_out.end(), ' '), super_size_out.end());
-+
-+			//std::string super_flash_cmd = "pv -s " + super_size_out + " \"" + super_img_path + "\" | dd of=\"" + super_block + "\" bs=1M conv=fsync status=none";
-+			std::string super_flash_cmd = "pv -s " + super_size_out + " \"" + super_img_path + "\" > \"" + super_block + "\"";
-+			gui_print("Flashing super.img to super partition...");
-+			if (TWFunc::Exec_Cmd(super_flash_cmd, true) != 0) {
-+				LOGERR("Error!! Failed to flash super.img");
-+				zip_queue_index = 0;
-+			    DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
-+				DataManager::SetValue("arkt_magic_auto_installer", 0);
-+				TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+				operation_end(1);
-+				return 1;
-+			}
-+		}
-+
-+		gui_print("\nMagic Flashing completed!");
-+		gui_print("\nIf Clean Install/Not updating: Make sure to Format/Wipe data!");
-+		gui_print(" ");
-+		PartitionManager.Set_Active_Slot("A");
++magic_done:
 +		zip_queue_index = 0;
-+		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, zip_queue_index);
++		DataManager::SetValue(TW_ZIP_QUEUE_COUNT, 0);
 +		DataManager::SetValue("arkt_magic_auto_installer", 0);
-+		TWFunc::Exec_Cmd("rm -rf /sdcard/arkt-magic/");
-+		PartitionManager.Set_Active_Slot("A");
-+		operation_end(0);
-+		return 0;
++		TWFunc::Exec_Cmd("rm -rf " + magic_dir, false);
++		operation_end(magic_ret);
++		return magic_ret;
 +	}
 +
  	for (i=0; i<zip_queue_index; i++) {
  		string zip_path = zip_queue[i];
  		size_t slashpos = zip_path.find_last_of('/');
-@@ -1933,8 +2198,12 @@
+@@ -1933,8 +2105,12 @@
  	int op_status = 0;
  
  	operation_start("Set Language");
@@ -340,7 +259,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	op_status = 0; // success
  
  	operation_end(op_status);
-@@ -2373,3 +2642,70 @@
+@@ -2373,3 +2549,107 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -354,16 +273,61 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    return 0;
 +}
 +
++int GUIAction::checkmagicspacebyarkt(std::string arg __unused)
++{
++    if (DataManager::GetIntValue("arkt_magic_auto_installer") != 1)
++        return 0;
++
++    std::string zip_path = zip_queue[0];
++    if (zip_path.empty())
++        return 0;
++
++    double total_gb = 0.0;
++    std::string out;
++    if (TWFunc::Exec_Cmd("/system/bin/otaripper -l \"" + zip_path + "\"", out, true) == 0) {
++        std::istringstream stream(out);
++        std::string line, part, unit;
++        double size = 0.0;
++
++        while (std::getline(stream, line)) {
++            std::istringstream ls(line);
++            if (!(ls >> part >> size >> unit))
++                continue;
++
++            if (std::find(arkt_required_parts.begin(), arkt_required_parts.end(), part) != arkt_required_parts.end()) {
++                if (unit == "GiB" || unit == "GB") total_gb += size;
++                else if (unit == "MiB" || unit == "MB") total_gb += size / 1024.0;
++                else if (unit == "KiB" || unit == "KB") total_gb += size / (1024.0 * 1024.0);
++            }
++        }
++    }
++
++    double req_gb = (total_gb > 0.0) ? (total_gb * 2.0) : 14.0;
++    double free_gb = 0.0;
++
++    struct statvfs vfs;
++    if (statvfs("/sdcard", &vfs) == 0)
++        free_gb = ((double)vfs.f_bavail * vfs.f_frsize) / (1024.0 * 1024.0 * 1024.0);
++
++    char free_buf[32], req_buf[32];
++    snprintf(free_buf, sizeof(free_buf), "%.1f GB", free_gb);
++    snprintf(req_buf, sizeof(req_buf), "%.1f GB", req_gb);
++
++    DataManager::SetValue("arkt_free_space", free_buf);
++    DataManager::SetValue("arkt_required_space", req_buf);
++
++    if (free_gb < req_gb) {
++        gui_changeOverlay("magic_space_warn");
++        return 1;
++    }
++    return 0;
++}
++
 +int GUIAction::installbyarkt(std::string arg __unused)
 +{
 +    std::string filepath;
 +    DataManager::GetValue("tw_filename", filepath);
-+    std::string filename = filepath;
-+    size_t last_slash = filepath.find_last_of("/");
-+
-+    if (last_slash != std::string::npos) {
-+        filename = filepath.substr(last_slash + 1);
-+    }
++    std::string filename = TWFunc::Get_Filename(filepath);
 +
 +    std::string ext = "";
 +    size_t pos = filename.find_last_of(".");
@@ -394,17 +358,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +        gui_changePage("flashimage_confirm");
 +
 +    } else {
-+        std::string marker_file = "/tmp/ark_payload_found";
-+        std::string check_cmd = "rm -f " + marker_file + "; unzip -l \"" + filepath + "\" | grep payload.bin > /dev/null && touch " + marker_file + " || true";
-+        TWFunc::Exec_Cmd(check_cmd);
-+
-+        if (access(marker_file.c_str(), F_OK) == 0) {
-+            DataManager::SetValue("arkt_magic_auto_installer", 1);
-+            DataManager::SetValue("tw_zip_has_payload", 1);
-+        } else {
-+            DataManager::SetValue("arkt_magic_auto_installer", 0);
-+            DataManager::SetValue("tw_zip_has_payload", 0);
-+        }
++        bool has_payload = (TWFunc::Exec_Cmd("unzip -l \"" + filepath + "\" | grep -q payload.bin", false) == 0);
++        DataManager::SetValue("tw_zip_has_payload", has_payload ? 1 : 0);
++        DataManager::SetValue("arkt_magic_auto_installer", has_payload ? 1 : 0);
 +
 +        queuezip(""); 
 +        gui_changePage("flash_confirm");
@@ -453,7 +409,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/fill.cpp /bootable/recovery/gu
  
 diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery/gui/objects.hpp
 --- /bootable/recovery/gui/objects.hpp	2026-10-19 08:03:38.677666693 +0530
-+++ /bootable/recovery/gui/objects.hpp	2026-10-19 07:32:42.490477496 +0530
++++ /bootable/recovery/gui/objects.hpp	2026-10-19 09:11:00.253173161 +0530
 @@ -256,6 +256,7 @@
  
  protected:
@@ -462,12 +418,15 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/objects.hpp /bootable/recovery
  };
  
  // GUIAction - Used for standard actions
-@@ -335,6 +336,8 @@
+@@ -334,7 +335,10 @@
+ 	int setbrightness(std::string arg);
  	int checkforapp(std::string arg);
  	int unmapsuperdevices(std::string arg);
- 	int removedynamicgroups(std:: string arg);
-+	int rotationbyarkt(std:: string arg);
-+	int installbyarkt(std:: string arg);
+-	int removedynamicgroups(std:: string arg);
++	int removedynamicgroups(std::string arg);
++	int rotationbyarkt(std::string arg);
++	int installbyarkt(std::string arg);
++	int checkmagicspacebyarkt(std::string arg);
  
  	// (originally) threaded actions
  	int fileexists(std::string arg);
