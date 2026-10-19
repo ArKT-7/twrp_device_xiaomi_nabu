@@ -30,7 +30,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/data.cpp /bootable/recovery/data.c
  void DataManager::Vibrate(const string& varName)
 diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/gui/action.cpp
 --- /bootable/recovery/gui/action.cpp	2026-10-19 08:03:38.677557047 +0530
-+++ /bootable/recovery/gui/action.cpp	2026-10-20 01:23:22.431233571 +0530
++++ /bootable/recovery/gui/action.cpp	2026-10-20 03:01:54.530525989 +0530
 @@ -22,6 +22,7 @@
  #include <string.h>
  #include <fcntl.h>
@@ -39,7 +39,16 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  #include <sys/time.h>
  #include <sys/mman.h>
  #include <sys/types.h>
-@@ -210,6 +211,9 @@
+@@ -35,6 +36,8 @@
+ #include <private/android_filesystem_config.h>
+ #include <android-base/properties.h>
+ #include <fstream>
++#include <atomic>
++#include <thread>
+ 
+ #include <string>
+ #include <sstream>
+@@ -210,6 +213,9 @@
  		ADD_ACTION(enablefastboot);
  		ADD_ACTION(changeterminal);
  		ADD_ACTION(unmapsuperdevices);
@@ -49,7 +58,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  
  		// remember actions that run in the caller thread
  		for (mapFunc::const_iterator it = mf.begin(); it != mf.end(); ++it)
-@@ -557,6 +561,7 @@
+@@ -557,6 +563,7 @@
  
  int GUIAction::reboot(std::string arg)
  {
@@ -57,7 +66,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	sync();
  	DataManager::SetValue("tw_gui_done", 1);
  	DataManager::SetValue("tw_reboot_arg", arg);
-@@ -672,8 +677,11 @@
+@@ -672,8 +679,11 @@
  		gui_msg("simulating=Simulating actions...");
  	else {
  		DataManager::ResetDefaults();
@@ -69,7 +78,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	}
  	operation_end(0);
  	return 0;
-@@ -1069,11 +1077,175 @@
+@@ -1069,11 +1079,273 @@
  	return 0;
  }
  
@@ -84,6 +93,82 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +	if (stat(path.c_str(), &st) == 0 && st.st_size > 0)
 +		return (uint64_t)st.st_size;
 +	return 0;
++}
++
++static const int arkt_extract_end = 45, arkt_build_end = 65;
++
++static void arkt_progress(uint64_t done, uint64_t total, int from, int to)
++{
++	if (total == 0)
++		return;
++	if (done > total)
++		done = total;
++	DataManager::SetValue("ui_progress", from + (int)((to - from) * ((double)done / total)));
++}
++
++static uint64_t arkt_parts_bytes(const std::string& list)
++{
++	std::istringstream stream(list);
++	std::string line, part, unit;
++	double size, total = 0;
++
++	while (std::getline(stream, line)) {
++		std::istringstream ls(line);
++		if (!(ls >> part >> size >> unit))
++			continue;
++		if (part != "mi_ext" && std::find(arkt_required_parts.begin(), arkt_required_parts.end(), part) == arkt_required_parts.end())
++			continue;
++		if (unit == "GiB" || unit == "GB") total += size * 1024.0 * 1024.0 * 1024.0;
++		else if (unit == "MiB" || unit == "MB") total += size * 1024.0 * 1024.0;
++		else if (unit == "KiB" || unit == "KB") total += size * 1024.0;
++	}
++	return (uint64_t)total;
++}
++
++static uint64_t arkt_free_bytes()
++{
++	struct statvfs vfs;
++	if (statvfs("/sdcard", &vfs) != 0)
++		return 0;
++	return (uint64_t)vfs.f_bavail * vfs.f_frsize;
++}
++
++static int arkt_run(const std::string& cmd, uint64_t total, int from, int to)
++{
++	uint64_t start = arkt_free_bytes();
++	std::atomic<bool> done(false);
++	std::thread watcher([&]() {
++		while (!done) {
++			uint64_t now = arkt_free_bytes();
++			arkt_progress(start > now ? start - now : 0, total, from, to);
++			usleep(300000);
++		}
++	});
++	int rc = TWFunc::Exec_Cmd(cmd, true);
++	done = true;
++	watcher.join();
++	if (rc == 0)
++		arkt_progress(1, 1, from, to);
++	return rc;
++}
++
++static bool arkt_flash_img(const std::string& src, const std::string& dst, uint64_t& done, uint64_t total)
++{
++	std::vector<char> buf(4 << 20);
++	int in = open(src.c_str(), O_RDONLY);
++	int out = open(dst.c_str(), O_WRONLY);
++	bool ok = in >= 0 && out >= 0;
++	ssize_t n = 0;
++
++	while (ok && (n = read(in, buf.data(), buf.size())) > 0) {
++		ok = write(out, buf.data(), n) == n;
++		done += n;
++		arkt_progress(done, total, arkt_build_end, 100);
++	}
++	ok = ok && n == 0 && fsync(out) == 0;
++	close(in);
++	close(out);
++	return ok;
 +}
 +
  int GUIAction::flash(std::string arg)
@@ -130,15 +215,21 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +				goto magic_done;
 +			}
 +
++			std::set<std::string> found_parts;
 +			std::istringstream stream(payload_out);
 +			std::string line;
 +			while (std::getline(stream, line)) {
 +				gui_print("%s\n", line.c_str());
++				std::istringstream ls(line);
++				std::string part, unit;
++				double sz;
++				if (ls >> part >> sz >> unit)
++					found_parts.insert(part);
 +			}
 +
 +			std::vector<std::string> missing;
 +			for (const auto& part : arkt_required_parts) {
-+				if (payload_out.find(part) == std::string::npos) {
++				if (!found_parts.count(part)) {
 +					missing.push_back(part);
 +				}
 +			}
@@ -151,9 +242,19 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +			}
 +			gui_print("OTA ZIP contains all required images");
 +
++			std::string extract_parts;
++			for (const auto& part : arkt_required_parts) {
++				if (!extract_parts.empty())
++					extract_parts += ",";
++				extract_parts += part;
++			}
++			if (found_parts.count("mi_ext")) {
++				extract_parts += ",mi_ext";
++			}
++
 +			TWFunc::Exec_Cmd("rm -rf " + magic_dir + " && mkdir -p " + magic_dir);
 +			gui_print("\nExtracting images directly from ZIP...");
-+			if (TWFunc::Exec_Cmd("/system/bin/otaripper -n -o " + magic_dir + " \"" + zip_path + "\"", true) != 0) {
++			if (arkt_run("/system/bin/otaripper -n -p " + extract_parts + " -o " + magic_dir + " \"" + zip_path + "\"", arkt_parts_bytes(payload_out), 0, arkt_extract_end) != 0) {
 +				LOGERR("Error!! Failed to extract images from OTA ZIP\n");
 +				goto magic_done;
 +			}
@@ -170,6 +271,9 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +				"--group super_group_b:9126805504 ";
 +
 +			std::vector<std::string> super_parts = {"odm", "product", "system", "system_ext", "vendor"};
++			uint64_t super_total = 0;
++			if (get_img_size(magic_dir + "mi_ext.img"))
++				super_parts.insert(super_parts.begin(), "mi_ext");
 +			for (const auto& part : super_parts) {
 +				std::string part_path = magic_dir + part + ".img";
 +				uint64_t sz = get_img_size(part_path);
@@ -178,13 +282,14 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +					goto magic_done;
 +				}
 +
++				super_total += sz;
 +				lpmake_cmd += "--partition " + part + "_a:readonly:" + std::to_string(sz) + ":super_group_a "
 +							+ "--image " + part + "_a=" + part_path + " "
 +							+ "--partition " + part + "_b:readonly:0:super_group_b ";
 +			}
 +
 +			lpmake_cmd += "--virtual-ab --output " + magic_dir + "super.img";
-+			if (TWFunc::Exec_Cmd(lpmake_cmd, true) != 0) {
++			if (arkt_run(lpmake_cmd, super_total, arkt_extract_end, arkt_build_end) != 0) {
 +				LOGERR("Error!! lpmake failed to create super.img\n");
 +				goto magic_done;
 +			}
@@ -199,6 +304,10 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +				"boot", "dtbo", "vbmeta", "vbmeta_system", "vendor_boot", "super"
 +			};
 +
++			uint64_t flash_total = 0, flash_done = 0;
++			for (const auto& part : flash_parts)
++				flash_total += get_img_size(magic_dir + part + ".img") * (part == "super" ? 1 : 2);
++
 +			for (const auto& part : flash_parts) {
 +				std::string img_path = magic_dir + part + ".img";
 +				uint64_t sz = get_img_size(img_path);
@@ -209,8 +318,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +
 +				if (part == "super") {
 +					gui_print("Flashing super.img to super partition...");
-+					std::string cmd = "pv -s " + std::to_string(sz) + " \"" + img_path + "\" > \"" + by_name + "super\"";
-+					if (TWFunc::Exec_Cmd(cmd, true) != 0) {
++					if (!arkt_flash_img(img_path, by_name + "super", flash_done, flash_total)) {
 +						LOGERR("Error!! Failed to flash super.img\n");
 +						goto magic_done;
 +					}
@@ -218,8 +326,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +					for (const auto& slot : {"_a", "_b"}) {
 +						std::string target = part + slot;
 +						gui_print("Flashing %s.img to %s...", part.c_str(), target.c_str());
-+						std::string cmd = "pv -s " + std::to_string(sz) + " \"" + img_path + "\" > \"" + by_name + target + "\"";
-+						if (TWFunc::Exec_Cmd(cmd, true) != 0) {
++						if (!arkt_flash_img(img_path, by_name + target, flash_done, flash_total)) {
 +							LOGERR("Error!! Failed to flash %s.img to %s\n", part.c_str(), target.c_str());
 +							goto magic_done;
 +						}
@@ -245,7 +352,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	for (i=0; i<zip_queue_index; i++) {
  		string zip_path = zip_queue[i];
  		size_t slashpos = zip_path.find_last_of('/');
-@@ -1933,8 +2105,12 @@
+@@ -1933,8 +2205,12 @@
  	int op_status = 0;
  
  	operation_start("Set Language");
@@ -259,7 +366,7 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
  	op_status = 0; // success
  
  	operation_end(op_status);
-@@ -2373,3 +2549,107 @@
+@@ -2373,3 +2649,92 @@
  	operation_end(op_status);
  	return 0;
  }
@@ -282,27 +389,12 @@ diff -ruN '--exclude=.git' /bootable/recovery/gui/action.cpp /bootable/recovery/
 +    if (zip_path.empty())
 +        return 0;
 +
-+    double total_gb = 0.0;
++    uint64_t total = 0;
 +    std::string out;
-+    if (TWFunc::Exec_Cmd("/system/bin/otaripper -l \"" + zip_path + "\"", out, true) == 0) {
-+        std::istringstream stream(out);
-+        std::string line, part, unit;
-+        double size = 0.0;
++    if (TWFunc::Exec_Cmd("/system/bin/otaripper -l \"" + zip_path + "\"", out, true) == 0)
++        total = arkt_parts_bytes(out);
 +
-+        while (std::getline(stream, line)) {
-+            std::istringstream ls(line);
-+            if (!(ls >> part >> size >> unit))
-+                continue;
-+
-+            if (std::find(arkt_required_parts.begin(), arkt_required_parts.end(), part) != arkt_required_parts.end()) {
-+                if (unit == "GiB" || unit == "GB") total_gb += size;
-+                else if (unit == "MiB" || unit == "MB") total_gb += size / 1024.0;
-+                else if (unit == "KiB" || unit == "KB") total_gb += size / (1024.0 * 1024.0);
-+            }
-+        }
-+    }
-+
-+    double req_gb = (total_gb > 0.0) ? (total_gb * 2.0) : 14.0;
++    double req_gb = total ? total * 2.0 / (1024.0 * 1024.0 * 1024.0) + 1.0 : 14.0;
 +    double free_gb = 0.0;
 +
 +    struct statvfs vfs;
