@@ -85,16 +85,10 @@ TARGET_SCREEN_WIDTH := 1600
 # ==================================================
 # == TWRP UI Configuration ==
 # ==================================================
-#TW_THEME := landscape_hdpi
-#TW_ROTATION := 90
-#RECOVERY_TOUCHSCREEN_SWAP_XY := true
-#RECOVERY_TOUCHSCREEN_FLIP_Y := true
-# ==================================================
 TW_THEME := portrait_hdpi
 TW_DEVICE_VERSION := 4 Mod Recovery by ArKT
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
-TARGET_RECOVERY_QCOM_RTC_FIX := true
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 TW_EXTRA_LANGUAGES := false
 TW_INCLUDE_NTFS_3G := true
@@ -115,8 +109,6 @@ TW_EXCLUDE_APEX := true
 TW_INCLUDE_FASTBOOTD := true
 TW_NO_EXFAT_FUSE := false
 TWRP_INCLUDE_LOGCAT := true
-TARGET_USES_LOGD := true
-TARGET_USES_MKE2FS := true
 TW_NO_HAPTICS := true
 TW_VERBOSE_MOUNT_LOGGING := true
 TW_INCLUDE_TWRP_CMD := true
@@ -124,6 +116,7 @@ TW_INCLUDE_TWRP_CLI := true
 TW_INCLUDE_NANO := true
 TW_HAS_EDL_MODE := true
 TW_USE_NEW_MINADBD := true
+
 # ==================================================
 # == Crypto / FBE Decryption Support ==
 # ==================================================
@@ -131,6 +124,7 @@ TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_CRYPTO_FBE := true
 TW_INCLUDE_CRYPTO_FBE_METADATA_ENCRYPTION := true
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
+
 # ==================================================
 # == Versions ==
 # ==================================================
@@ -139,11 +133,10 @@ VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
 BOOT_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
 PLATFORM_VERSION := 99.87.36
 PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
+
 # ==================================================
 # == Recovery Device Modules and Libraries ==
 # ==================================================
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
-TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
 TARGET_RECOVERY_DEVICE_MODULES += \
     libion \
     libandroidicu

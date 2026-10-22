@@ -3587,7 +3587,6 @@ system/bin/tty
 system/bin/uuidgen
 system/bin/[
 system/bin/mkfs.ntfs
-system/bin/overrideprops.sh
 system/bin/modprobe
 system/bin/mknod
 system/bin/privapp-permissions-twrpapp.xml
